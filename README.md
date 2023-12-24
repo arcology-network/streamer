@@ -2,7 +2,7 @@
 
 Streamer is an internally developed Event-Driven Architecture (EDA) framework by Arcology. It offers a unified solution for seamless inter-thread and inter-process communication regardless of deployment method or location. 
 
-## How It Work ⚙️
+## How It Work 🔨
 
 In Streamer, an Event Broker serves as the central hub for managing and distributing events flow to and from actors. Each actor comprises a State Machine that controls overall actor state transitions, an Event Filter governing event relationships and triggering the associated Worker Thread. Developers embed custom logic in the Worker Thread for event and data processing. 
 
@@ -34,7 +34,7 @@ Streamer's event broker is designed to work inter-thread communication only. If 
 
 - Distributed Streaming: Ideal for distributed streaming with scalability, durability, and fault tolerance.
 
-## License
+## License 
 This project is licensed under the MIT License.
 
 
