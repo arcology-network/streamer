@@ -1,0 +1,13 @@
+Level	  = "debug"
+Version = "1.3.0"
+
+[Console]
+SystemOut = true
+
+[LocalFile]
+SaveFile  = true
+MaxSize   = 100
+MaxBackups= 30
+MaxAge    = 7
+Compress  = false
+Ignored = "rawtx,txLocals,txRemote,txBlock,messager,unknown,checkedtx,checkingtx"
