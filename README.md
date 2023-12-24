@@ -14,7 +14,7 @@ In Streamer, an Event Broker serves as the central hub for managing and distribu
 <img src="./img/broker-actor.png" alt="multi evms" height="300">
 </p>
 
-## Key Features 
+## Key Features 🎉
 
 - Unified Framework: Abstracts event broker logic into a unified framework, eliminating the need for multiple brokers.
 
@@ -34,7 +34,7 @@ Streamer's event broker is designed to work inter-thread communication only. If 
 
 - Distributed Streaming: Ideal for distributed streaming with scalability, durability, and fault tolerance.
 
+## License
+This project is licensed under the MIT License.
 
-Explore the technical power of Streamer for efficient event-driven architecture with scalability and flexibility. Happy coding!
-<!--  -->
 
