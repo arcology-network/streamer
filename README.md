@@ -32,7 +32,8 @@ In Streamer, an Event Broker serves as the central hub for managing and distribu
 
 Streamer's event broker is designed to work inter-thread communication only. If one event broker in Streamer needs to communicate with others residing in different processes, it requires assistance from inter-process communication modules. Streamer seamlessly integrates with 3rd-party systems like Apache Kafka for high-throughput inter-process communication.
 
-## Use Cases
+
+<h2> Use Cases <img align="center" height="32" src="./img/palette.svg">  </h2>
 
 - Scalable EDA: Suited for high-scalability event-driven architecture.
 
