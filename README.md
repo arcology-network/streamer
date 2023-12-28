@@ -40,7 +40,7 @@ Streamer's event broker is designed to work inter-thread communication only. If 
 - Distributed Streaming: Ideal for distributed streaming with scalability, durability, and fault tolerance.
 
 
-<h2> License <img align="center" height="32" src="./img/book.svg">  </h2>
+<h2> License <img align="center" height="32" src="./img/copyright.svg">  </h2>
 This project is licensed under the MIT License.
 
 
