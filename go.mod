@@ -30,7 +30,7 @@ require (
 )
 
 require (
-	github.com/arcology-network/common-lib v0.0.0-00010101000000-000000000000
+	github.com/arcology-network/common-lib v1.9.1-0.20240526090033-4c2ee0f20f15
 	github.com/arcology-network/consensus-engine v0.0.0-00010101000000-000000000000
 	github.com/arcology-network/eu v0.0.0-00010101000000-000000000000
 	github.com/ethereum/go-ethereum v1.13.1
