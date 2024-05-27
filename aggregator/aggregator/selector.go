@@ -2,11 +2,11 @@ package aggregator
 
 import (
 	"github.com/arcology-network/common-lib/common"
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type Selector struct {
-	clearance    []*evmCommon.Hash
+	clearance    []evmCommon.Hash
 	selectedList []*interface{}
 	missingList  *MissingList
 	pool         *DataPool
@@ -15,7 +15,7 @@ type Selector struct {
 // NewDataPool returns a new DataPool structure.
 func NewSelector() *Selector {
 	return &Selector{
-		clearance:    []*evmCommon.Hash{},
+		clearance:    []evmCommon.Hash{},
 		selectedList: []*interface{}{},
 		missingList:  NewMissingList(),
 		pool:         NewDataPool(),
@@ -30,12 +30,12 @@ func (s *Selector) GenerateMissing(hashs Hashable) int {
 	s.selectedList = make([]*interface{}, len(selectList))
 
 	worker := func(start, end, idx int, args ...interface{}) {
-		selectingList := args[0].([]interface{})[0].([]*evmCommon.Hash)
+		selectingList := args[0].([]interface{})[0].([]evmCommon.Hash)
 		selectedList := args[0].([]interface{})[1].([]*interface{})
 		missingist := args[0].([]interface{})[2].(*MissingList)
 		for i := start; i < end; i++ {
 			hash := selectingList[i]
-			obj := s.pool.get(*hash)
+			obj := s.pool.get(hash)
 			if obj != nil {
 				selectedList[i] = &obj
 			} else {
@@ -52,7 +52,7 @@ func (s *Selector) GenerateMissing(hashs Hashable) int {
 func (s *Selector) OnDataReceived(h evmCommon.Hash, data interface{}) {
 	s.pool.add(h, data)
 	if s.missingList.IsGenerated() {
-		if ok, idx := s.missingList.RemoveFromMissing(&h); ok {
+		if ok, idx := s.missingList.RemoveFromMissing(h); ok {
 			s.selectedList[idx] = &data
 		}
 	}
@@ -61,7 +61,7 @@ func (s *Selector) OnDataReceived(h evmCommon.Hash, data interface{}) {
 // clear from pool
 func (s *Selector) Clear() {
 	for _, h := range s.clearance {
-		s.pool.remove(*h)
+		s.pool.remove(h)
 	}
 }
 

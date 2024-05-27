@@ -3,8 +3,8 @@ package kafka
 import (
 	"strings"
 
-	"github.com/arcology-network/component-lib/actor"
-	"github.com/arcology-network/component-lib/kafka/v2/lib"
+	"github.com/arcology-network/streamer/actor"
+	"github.com/arcology-network/streamer/kafka/v2/lib"
 	"github.com/spf13/viper"
 )
 

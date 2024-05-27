@@ -26,9 +26,9 @@ func (mw1 *mockActor1) Consume(data interface{}) {
 	mw1.c <- data
 }
 
-func (mw1 *mockActor1) start() {
+func (mw1 *mockActor1) serve() {
 	for v := range mw1.c {
-		fmt.Printf("e0: %v, e1: %v\n", v.([]interface{})[0].(*mockState), v.([]interface{})[1].(*mockState))
+		fmt.Printf("State1: %v, State2: %v\n", v.([]interface{})[0].(*mockState), v.([]interface{})[1].(*mockState))
 	}
 }
 
@@ -50,32 +50,27 @@ func TestStateAggregator(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	log.SetFormatter(&log.JSONFormatter{})
 
-	broker := NewStatefulBroker()
-	p1 := NewDefaultProducer("A", []string{"e0"}, []int{0})
-	p2 := NewDefaultProducer("B", []string{"e1"}, []int{0})
-
-	broker.RegisterProducer(p1)
-	broker.RegisterProducer(p2)
-
+	ss := NewStatefulStreamer()
+	p1 := NewDefaultProducer("A", []string{"State1"}, []int{0})
+	p2 := NewDefaultProducer("B", []string{"State2"}, []int{0})
 	actor := mockActor1{
 		c: make(chan interface{}),
 	}
-	c := NewDefaultConsumer("C",
-		[]string{"e0", "e1"},
-		NewConjunctions(&actor))
+	c := NewDefaultConsumer("C", []string{"State1", "State2"}, NewConjunctions(&actor))
 
-	broker.RegisterConsumer(c)
+	ss.RegisterProducer(p1)
+	ss.RegisterProducer(p2)
+	ss.RegisterConsumer(c)
+	ss.Serve()
+	go actor.serve()
 
-	broker.Serve()
-	go actor.start()
-
-	broker.Send("e0", &mockState{"1"})
-	broker.Send("e1", &mockState{"2"})
+	ss.Send("State1", &mockState{"1"})
+	ss.Send("State2", &mockState{"2"})
 	time.Sleep(time.Second)
 
-	broker.Send("e0", &mockState{"1"})
-	broker.Send("e0", &mockState{"2"})
-	broker.Send("e1", &mockState{"1"})
+	ss.Send("State1", &mockState{"1"})
+	ss.Send("State1", &mockState{"2"})
+	ss.Send("State2", &mockState{"1"})
 	time.Sleep(time.Second)
 }
 
@@ -83,29 +78,26 @@ func TestStreamAggregator(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	log.SetFormatter(&log.JSONFormatter{})
 
-	broker := NewStatefulBroker()
-
-	actorA := NewDefaultProducer("A", []string{"Stream1"}, []int{1})
-	broker.RegisterProducer(actorA)
-
-	actorB := NewDefaultProducer("B", []string{"Stream2"}, []int{1})
-	broker.RegisterProducer(actorB)
-
-	actorC := mockActor1{
+	ss := NewStatefulStreamer()
+	p1 := NewDefaultProducer("A", []string{"Stream1"}, []int{1})
+	p2 := NewDefaultProducer("B", []string{"Stream2"}, []int{1})
+	actor := mockActor1{
 		c: make(chan interface{}),
 	}
-	c := NewDefaultConsumer("C", []string{"Stream1", "Stream2"}, NewConjunctions(&actorC))
-	broker.RegisterConsumer(c)
+	c := NewDefaultConsumer("C", []string{"Stream1", "Stream2"}, NewConjunctions(&actor))
 
-	broker.Serve()
-	go actorC.start()
+	ss.RegisterProducer(p1)
+	ss.RegisterProducer(p2)
+	ss.RegisterConsumer(c)
+	ss.Serve()
+	go actor.serve()
 
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream2", &mockState{"2"})
 	time.Sleep(time.Second)
 
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream2", &mockState{"2"})
 	time.Sleep(time.Second)
 }
 
@@ -113,7 +105,7 @@ func TestDisjunctions(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	log.SetFormatter(&log.JSONFormatter{})
 
-	broker := NewStatefulBroker()
+	ss := NewStatefulStreamer()
 	p1 := NewDefaultProducer("A", []string{"Stream1"}, []int{1})
 	p2 := NewDefaultProducer("A", []string{"Stream2"}, []int{1})
 	actor := mockActor2{
@@ -121,22 +113,22 @@ func TestDisjunctions(t *testing.T) {
 	}
 	c := NewDefaultConsumer("C", []string{"Stream1", "Stream2"}, NewDisjunctions(&actor, 3))
 
-	broker.RegisterProducer(p1)
-	broker.RegisterProducer(p2)
-	broker.RegisterConsumer(c)
-	broker.Serve()
-	fmt.Println(broker.GenerateDot())
+	ss.RegisterProducer(p1)
+	ss.RegisterProducer(p2)
+	ss.RegisterConsumer(c)
+	ss.Serve()
+	fmt.Println(ss.GenerateDot())
 	go actor.serve()
 
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream2", &mockState{"2"})
 	time.Sleep(time.Second)
 
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream2", &mockState{"2"})
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream1", &mockState{"1"})
 	time.Sleep(time.Second)
 }
 
@@ -144,7 +136,7 @@ func TestCustomizableController(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	log.SetFormatter(&log.JSONFormatter{})
 
-	broker := NewStatefulBroker()
+	ss := NewStatefulStreamer()
 	p1 := NewDefaultProducer("A", []string{"Stream1"}, []int{5})
 	p2 := NewDefaultProducer("B", []string{"Stream2"}, []int{5})
 	actor := mockActor1{
@@ -157,33 +149,33 @@ func TestCustomizableController(t *testing.T) {
 		},
 	))
 
-	broker.RegisterProducer(p1)
-	broker.RegisterProducer(p2)
-	broker.RegisterConsumer(c)
-	broker.Serve()
-	fmt.Println(broker.GenerateDot())
-	go actor.start()
+	ss.RegisterProducer(p1)
+	ss.RegisterProducer(p2)
+	ss.RegisterConsumer(c)
+	ss.Serve()
+	fmt.Println(ss.GenerateDot())
+	go actor.serve()
 
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream2", &mockState{"1"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream2", &mockState{"1"})
 	time.Sleep(time.Second)
 
-	broker.Send("Stream1", &mockState{"2"})
-	broker.Send("Stream2", &mockState{"2"})
-	broker.Send("Stream2", &mockState{"2"})
-	broker.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream1", &mockState{"2"})
+	ss.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream2", &mockState{"2"})
 	time.Sleep(time.Second)
 
-	broker.Send("Stream1", &mockState{"3"})
-	broker.Send("Stream2", &mockState{"1"})
-	broker.Send("Stream2", &mockState{"3"})
+	ss.Send("Stream1", &mockState{"3"})
+	ss.Send("Stream2", &mockState{"1"})
+	ss.Send("Stream2", &mockState{"3"})
 	time.Sleep(time.Second)
 }
 
 func TestGenerateDot(t *testing.T) {
-	var p1, p2, p3 Producer
-	var c1, c2 Consumer
-	broker := NewStatefulBroker()
+	var p1, p2, p3 StreamProducer
+	var c1, c2 StreamConsumer
+	ss := NewStatefulStreamer()
 	p1 = NewDefaultProducer("A", []string{"Stream1"}, []int{1})
 	p2 = NewDefaultProducer("B", []string{"Stream2"}, []int{1})
 	p3 = NewDefaultProducer("C", []string{"Stream3"}, []int{1})
@@ -199,14 +191,14 @@ func TestGenerateDot(t *testing.T) {
 	}
 	c3 := NewDefaultConsumer("H", []string{"Stream2", "Stream3"}, NewDisjunctions(&actor3, 3))
 
-	broker.RegisterProducer(p1)
-	broker.RegisterProducer(p2)
-	broker.RegisterProducer(p3)
-	broker.RegisterConsumer(c1)
-	broker.RegisterConsumer(c2)
-	broker.RegisterConsumer(c3)
-	broker.Serve()
-	fmt.Println(broker.GenerateDot())
+	ss.RegisterProducer(p1)
+	ss.RegisterProducer(p2)
+	ss.RegisterProducer(p3)
+	ss.RegisterConsumer(c1)
+	ss.RegisterConsumer(c2)
+	ss.RegisterConsumer(c3)
+	ss.Serve()
+	fmt.Println(ss.GenerateDot())
 }
 
 func TestPromMetrics(t *testing.T) {
@@ -216,7 +208,7 @@ func TestPromMetrics(t *testing.T) {
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(":19002", nil)
 
-	broker := NewStatefulBroker()
+	ss := NewStatefulStreamer()
 	p1 := NewDefaultProducer("A", []string{"Stream1"}, []int{1})
 	p2 := NewDefaultProducer("B", []string{"Stream2"}, []int{1})
 	actor := mockActor2{
@@ -224,21 +216,21 @@ func TestPromMetrics(t *testing.T) {
 	}
 	c := NewDefaultConsumer("C", []string{"Stream1", "Stream2"}, NewDisjunctions(&actor, 3))
 
-	broker.RegisterProducer(p1)
-	broker.RegisterProducer(p2)
-	broker.RegisterConsumer(c)
-	broker.Serve()
+	ss.RegisterProducer(p1)
+	ss.RegisterProducer(p2)
+	ss.RegisterConsumer(c)
+	ss.Serve()
 	go actor.serve()
 
 	go func() {
 		for {
-			broker.Send("Stream1", &mockState{"1"})
+			ss.Send("Stream1", &mockState{"1"})
 			time.Sleep(time.Millisecond * 500)
 		}
 	}()
 	go func() {
 		for {
-			broker.Send("Stream2", &mockState{"2"})
+			ss.Send("Stream2", &mockState{"2"})
 			time.Sleep(time.Second)
 		}
 	}()
@@ -249,9 +241,9 @@ func TestCompoundController(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	log.SetFormatter(&log.JSONFormatter{})
 
-	var p1, p2, p3 Producer
-	var c1, c2 Consumer
-	broker := NewStatefulBroker()
+	var p1, p2, p3 StreamProducer
+	var c1, c2 StreamConsumer
+	ss := NewStatefulStreamer()
 	p1 = NewDefaultProducer("A", []string{"Stream1"}, []int{1})
 	p2 = NewDefaultProducer("B", []string{"Stream2"}, []int{1})
 	p3 = NewDefaultProducer("C", []string{"Stream3"}, []int{1})
@@ -263,18 +255,18 @@ func TestCompoundController(t *testing.T) {
 	actor1 := NewShortCircuitActor(c2, "#D")
 	c1 = NewDefaultConsumer("D", []string{"Stream1", "Stream2"}, NewConjunctions(actor1))
 
-	broker.RegisterProducer(p1)
-	broker.RegisterProducer(p2)
-	broker.RegisterProducer(p3)
-	broker.RegisterConsumer(c1)
-	broker.RegisterConsumer(c2)
-	broker.Serve()
-	fmt.Println(broker.GenerateDot())
+	ss.RegisterProducer(p1)
+	ss.RegisterProducer(p2)
+	ss.RegisterProducer(p3)
+	ss.RegisterConsumer(c1)
+	ss.RegisterConsumer(c2)
+	ss.Serve()
+	fmt.Println(ss.GenerateDot())
 	go actor1.Serve()
 	go actor2.serve()
 
-	broker.Send("Stream1", &mockState{"1"})
-	broker.Send("Stream2", &mockState{"2"})
-	broker.Send("Stream3", &mockState{"3"})
+	ss.Send("Stream1", &mockState{"1"})
+	ss.Send("Stream2", &mockState{"2"})
+	ss.Send("Stream3", &mockState{"3"})
 	time.Sleep(time.Second)
 }

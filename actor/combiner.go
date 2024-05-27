@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	streamer "github.com/arcology-network/component-lib/broker"
+	brokerpk "github.com/arcology-network/streamer/broker"
 )
 
 const (
@@ -45,13 +45,13 @@ func Combine(inputs ...string) *Combiner {
 	}
 }
 
-func (c *Combiner) On(broker *streamer.StatefulBroker) *Combiner {
+func (c *Combiner) On(broker *brokerpk.StatefulStreamer) *Combiner {
 	combiner := NewActorEx(
 		c.outMsg,
 		broker,
 		c,
 	)
-	combiner.Connect(streamer.NewConjunctions(combiner))
+	combiner.Connect(brokerpk.NewConjunctions(combiner))
 	return c
 }
 

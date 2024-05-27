@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/common-lib/types"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -84,13 +83,13 @@ func InitLogSystem(logfile, logcfg, svcname string, nodeid int, nodename string)
 type ZapLog struct {
 	Log          *zap.Logger
 	sourceLookup map[string]int
-	logsChan     chan *types.ExecutingLogsMessage
+	// logsChan     chan *types.ExecutingLogsMessage
 }
 
-func (log *ZapLog) SetChan(logsChan chan *types.ExecutingLogsMessage) {
-	log.logsChan = logsChan
+// func (log *ZapLog) SetChan(logsChan chan *types.ExecutingLogsMessage) {
+// 	log.logsChan = logsChan
 
-}
+// }
 
 func (log *ZapLog) GetLogId() uint64 {
 	return common.GenerateUUID()
@@ -119,19 +118,19 @@ func (log *ZapLog) AddLog(logid uint64, level, source, workthreadname, info, log
 	if logid == 0 {
 		logid = log.GetLogId()
 	}
-	if level == LogLevel_Executing_Debug {
-		logs := types.ExecutingLogs{}
-		err := logs.UnMarshal(info)
-		if err == nil {
-			msg := types.ExecutingLogsMessage{
-				Logs:   logs,
-				Height: height,
-				Round:  round,
-				Msgid:  logid,
-			}
-			log.logsChan <- &msg
-		}
-	}
+	// if level == LogLevel_Executing_Debug {
+	// 	logs := types.ExecutingLogs{}
+	// 	err := logs.UnMarshal(info)
+	// 	if err == nil {
+	// 		msg := types.ExecutingLogsMessage{
+	// 			Logs:   logs,
+	// 			Height: height,
+	// 			Round:  round,
+	// 			Msgid:  logid,
+	// 		}
+	// 		log.logsChan <- &msg
+	// 	}
+	// }
 	if log.needLog(source) == false {
 		return logid
 	}

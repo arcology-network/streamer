@@ -3,13 +3,13 @@ package actor
 import (
 	"errors"
 
-	streamer "github.com/arcology-network/component-lib/broker"
-	"github.com/arcology-network/component-lib/log"
+	"github.com/arcology-network/streamer/broker"
+	"github.com/arcology-network/streamer/log"
 	"go.uber.org/zap/zapcore"
 )
 
 type IWorker interface {
-	Init(workThreadName string, broker *streamer.StatefulBroker)
+	Init(workThreadName string, broker *broker.StatefulStreamer)
 	ChangeEnvironment(message *Message)
 	OnStart()
 	OnMessageArrived(msgs []*Message) error
@@ -66,7 +66,7 @@ func (workerThd *WorkerThread) CheckPoint(info string, fields ...zapcore.Field) 
 	return workerThd.Log.CheckPoint(log.LogLevel_Info, workerThd.LatestMessage, info, fields...)
 }
 
-func (workerThd *WorkerThread) Init(workThreadName string, broker *streamer.StatefulBroker) {
+func (workerThd *WorkerThread) Init(workThreadName string, broker *broker.StatefulStreamer) {
 	workerThd.Name = workThreadName
 	latestMessage := NewMessage()
 

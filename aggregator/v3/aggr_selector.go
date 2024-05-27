@@ -1,10 +1,8 @@
 package aggregator
 
 import (
-	"fmt"
-
-	"github.com/arcology-network/component-lib/actor"
-	evmCommon "github.com/arcology-network/evm/common"
+	"github.com/arcology-network/streamer/actor"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type AggrOperation interface {
@@ -44,7 +42,9 @@ func (aggr *AggrSelector) Inputs() ([]string, bool) {
 func (aggr *AggrSelector) Outputs() map[string]int {
 	return aggr.op.Outputs()
 }
-
+func (aggr *AggrSelector) Config(params map[string]interface{}) {
+	aggr.op.Config(params)
+}
 func (aggr *AggrSelector) OnStart() {}
 
 func (aggr *AggrSelector) OnMessageArrived(msgs []*actor.Message) error {
@@ -70,8 +70,8 @@ func (aggr *AggrSelector) OnMessageArrived(msgs []*actor.Message) error {
 		}
 	case aggr.clearMsg:
 		aggr.ds.Clear(msg.Height)
-	default:
-		panic(fmt.Sprintf("unexpected message type: %v", msg.Name))
+		// default:
+		// 	panic(fmt.Sprintf("unexpected message type: %v", msg.Name))
 	}
 	return nil
 }

@@ -4,15 +4,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/component-lib/actor"
-	streamer "github.com/arcology-network/component-lib/broker"
-	"github.com/arcology-network/component-lib/log"
+	"github.com/arcology-network/streamer/actor"
+	brokerpk "github.com/arcology-network/streamer/broker"
+	"github.com/arcology-network/streamer/log"
 )
 
 func TestSequencer(t *testing.T) {
 	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
 
-	broker := streamer.NewStatefulBroker()
+	broker := brokerpk.NewStatefulStreamer()
 	workerBase := &actor.FSMController{}
 	workerBase.EndWith(actor.AsSequencer(NewWorker(), []string{msgA, msgB, msgC}))
 	workerActor := actor.NewActor(
@@ -27,9 +27,9 @@ func TestSequencer(t *testing.T) {
 		[]int{},
 		workerBase,
 	)
-	workerActor.Connect(streamer.NewDisjunctions(workerActor, 1))
+	workerActor.Connect(brokerpk.NewDisjunctions(workerActor, 1))
 
-	sender := streamer.NewDefaultProducer(
+	sender := brokerpk.NewDefaultProducer(
 		"sender",
 		[]string{
 			msgA,
@@ -74,7 +74,7 @@ func TestSequencer(t *testing.T) {
 func TestSequencer2(t *testing.T) {
 	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
 
-	broker := streamer.NewStatefulBroker()
+	broker := brokerpk.NewStatefulStreamer()
 	workerBase := &actor.FSMController{}
 	workerBase.EndWith(actor.AsSequencer(NewWorker(), []string{msgA, msgB, msgC}))
 	workerActor := actor.NewActor(
@@ -89,9 +89,9 @@ func TestSequencer2(t *testing.T) {
 		[]int{},
 		workerBase,
 	)
-	workerActor.Connect(streamer.NewDisjunctions(workerActor, 1))
+	workerActor.Connect(brokerpk.NewDisjunctions(workerActor, 1))
 
-	sender := streamer.NewDefaultProducer(
+	sender := brokerpk.NewDefaultProducer(
 		"sender",
 		[]string{
 			msgA,

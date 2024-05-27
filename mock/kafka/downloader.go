@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/arcology-network/component-lib/actor"
-	broker "github.com/arcology-network/component-lib/broker"
+	"github.com/arcology-network/streamer/actor"
+	"github.com/arcology-network/streamer/broker"
 )
 
 // Download implements IWorker interface.
@@ -21,7 +21,7 @@ func NewDownloader(_ int, _ string, _, messageTypes []string, _ string) actor.IW
 	}
 }
 
-func (d *Downloader) Init(wtName string, broker *broker.StatefulBroker) {
+func (d *Downloader) Init(wtName string, broker *broker.StatefulStreamer) {
 	t.Log("Downloader.Init")
 	d.broker = &actor.MessageWrapper{
 		MsgBroker:      broker,

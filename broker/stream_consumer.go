@@ -6,7 +6,7 @@ type DefaultConsumer struct {
 	controller StreamController
 }
 
-func NewDefaultConsumer(name string, inputs []string, controller StreamController) Consumer {
+func NewDefaultConsumer(name string, inputs []string, controller StreamController) StreamConsumer {
 	return &DefaultConsumer{
 		name:       name,
 		inputs:     inputs,
@@ -14,14 +14,14 @@ func NewDefaultConsumer(name string, inputs []string, controller StreamControlle
 	}
 }
 
-func (c *DefaultConsumer) Name() string {
+func (c *DefaultConsumer) GetName() string {
 	return c.name
 }
 
-func (c *DefaultConsumer) Inputs() []string {
+func (c *DefaultConsumer) GetInputs() []string {
 	return c.inputs
 }
 
-func (c *DefaultConsumer) StreamController() StreamController {
+func (c *DefaultConsumer) GetStreamController() StreamController {
 	return c.controller
 }

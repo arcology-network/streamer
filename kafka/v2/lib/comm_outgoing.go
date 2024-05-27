@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	"github.com/arcology-network/component-lib/actor"
-	"github.com/arcology-network/component-lib/log"
+	"github.com/arcology-network/streamer/actor"
+	"github.com/arcology-network/streamer/log"
 )
 
 type ComOutgoing struct {

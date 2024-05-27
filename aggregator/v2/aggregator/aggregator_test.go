@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/arcology-network/component-lib/actor"
+	"github.com/arcology-network/streamer/actor"
 )
 
 func TestAddDataThenPick(t *testing.T) {

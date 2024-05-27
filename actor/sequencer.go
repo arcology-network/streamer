@@ -1,6 +1,8 @@
 package actor
 
-import streamer "github.com/arcology-network/component-lib/broker"
+import (
+	"github.com/arcology-network/streamer/broker"
+)
 
 type sequencer struct {
 	worker IWorkerEx
@@ -21,7 +23,7 @@ func AsSequencer(worker IWorkerEx, sequence []string) *sequencer {
 	}
 }
 
-func (s *sequencer) Init(wtName string, broker *streamer.StatefulBroker) {
+func (s *sequencer) Init(wtName string, broker *broker.StatefulStreamer) {
 	s.worker.Init(wtName, broker)
 }
 

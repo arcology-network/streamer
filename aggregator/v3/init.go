@@ -1,7 +1,7 @@
 package aggregator
 
 import (
-	"github.com/arcology-network/component-lib/actor"
+	"github.com/arcology-network/streamer/actor"
 )
 
 func init() {
@@ -10,9 +10,9 @@ func init() {
 			concurrency,
 			groupId,
 			actor.MsgEuResults,
-			actor.MsgPrecedingList,
-			actor.MsgBlockCompleted,
-			&PrecedingListOperation{},
+			actor.MsgGenerationReapingList,
+			actor.MsgBlockEnd,
+			&EuResultOperation{},
 		)
 	})
 	actor.Factory.Register("stateful_euresult_aggr_selector", func(concurrency int, groupId string) actor.IWorkerEx {
@@ -20,7 +20,7 @@ func init() {
 			concurrency,
 			groupId,
 			actor.MsgEuResults,
-			actor.MsgInclusive,
+			actor.MsgGenerationReapingList,
 			actor.MsgBlockEnd,
 			&EuResultOperation{},
 		)

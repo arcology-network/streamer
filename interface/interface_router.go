@@ -6,14 +6,13 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/arcology-network/component-lib/rpc"
 	"github.com/smallnest/rpcx/client"
 )
 
 type RPCServerCreator func(serviceAddr, basepath string, zkAddrs []string, rcvrs, fns []interface{})
 
 var (
-	RPCCreator RPCServerCreator = rpc.InitZookeeperRpcServer
+	RPCCreator RPCServerCreator = InitZookeeperRpcServer
 )
 
 type InterfaceRouter struct {
@@ -69,7 +68,7 @@ func (router *InterfaceRouter) Call(name string, f string, args, reply interface
 		} else {
 			router.guard.RUnlock()
 			router.guard.Lock()
-			router.remotes[name] = rpc.InitZookeeperRpcClient(name, router.zkServers)
+			router.remotes[name] = InitZookeeperRpcClient(name, router.zkServers)
 			router.guard.Unlock()
 			err := router.remotes[name].Call(context.Background(), f, args, reply)
 			if err != nil {

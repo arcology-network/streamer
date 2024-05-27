@@ -3,8 +3,8 @@ package v2
 import (
 	"reflect"
 
-	"github.com/arcology-network/component-lib/actor"
-	"github.com/arcology-network/component-lib/aggregator/v2/aggregator"
+	"github.com/arcology-network/streamer/actor"
+	"github.com/arcology-network/streamer/aggregator/v2/aggregator"
 )
 
 type AggreSelector struct {

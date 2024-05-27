@@ -4,15 +4,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arcology-network/component-lib/actor"
-	streamer "github.com/arcology-network/component-lib/broker"
-	"github.com/arcology-network/component-lib/log"
+	"github.com/arcology-network/streamer/actor"
+	brokerpk "github.com/arcology-network/streamer/broker"
+	"github.com/arcology-network/streamer/log"
 )
 
 func TestAggrSelector(t *testing.T) {
 	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
 
-	broker := streamer.NewStatefulBroker()
+	broker := brokerpk.NewStatefulStreamer()
 	aggrSelectorBase := &actor.HeightController{}
 	aggrSelectorBase.Next(&actor.FSMController{}).Next(actor.MakeLinkable(NewDataPreprocessor())).EndWith(NewAggrSelector())
 	aggrSelectorActor := actor.NewActor(
@@ -27,9 +27,9 @@ func TestAggrSelector(t *testing.T) {
 		[]int{},
 		aggrSelectorBase,
 	)
-	aggrSelectorActor.Connect(streamer.NewDisjunctions(aggrSelectorActor, 1))
+	aggrSelectorActor.Connect(brokerpk.NewDisjunctions(aggrSelectorActor, 1))
 
-	sender := streamer.NewDefaultProducer(
+	sender := brokerpk.NewDefaultProducer(
 		"sender",
 		[]string{
 			msgData,
@@ -75,7 +75,7 @@ func TestAggrSelector(t *testing.T) {
 func TestAggrSelector2(t *testing.T) {
 	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
 
-	broker := streamer.NewStatefulBroker()
+	broker := brokerpk.NewStatefulStreamer()
 	aggrSelectorBase := &actor.HeightController{}
 	aggrSelectorBase.Next(&actor.FSMController{}).Next(actor.MakeLinkable(NewDataPreprocessor())).EndWith(NewAggrSelector())
 	aggrSelectorActor := actor.NewActor(
@@ -90,9 +90,9 @@ func TestAggrSelector2(t *testing.T) {
 		[]int{},
 		aggrSelectorBase,
 	)
-	aggrSelectorActor.Connect(streamer.NewDisjunctions(aggrSelectorActor, 1))
+	aggrSelectorActor.Connect(brokerpk.NewDisjunctions(aggrSelectorActor, 1))
 
-	sender := streamer.NewDefaultProducer(
+	sender := brokerpk.NewDefaultProducer(
 		"sender",
 		[]string{
 			msgData,
@@ -129,7 +129,7 @@ func TestAggrSelector2(t *testing.T) {
 func TestAggrSelectorWithMsgCleaner(t *testing.T) {
 	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
 
-	broker := streamer.NewStatefulBroker()
+	broker := brokerpk.NewStatefulStreamer()
 	aggrSelectorBase := actor.NewMsgCleaner(func(msg *actor.Message) bool {
 		return msg.Name != msgData || msg.From != "sender"
 	})
@@ -146,7 +146,7 @@ func TestAggrSelectorWithMsgCleaner(t *testing.T) {
 		[]int{},
 		aggrSelectorBase,
 	)
-	aggrSelectorActor.Connect(streamer.NewDisjunctions(aggrSelectorActor, 1))
+	aggrSelectorActor.Connect(brokerpk.NewDisjunctions(aggrSelectorActor, 1))
 
 	dataPreprocessorBase := actor.NewMsgCleaner(actor.OnlyFrom("sender"))
 	dataPreprocessorBase.EndWith(NewDataPreprocessorV2())
@@ -158,9 +158,9 @@ func TestAggrSelectorWithMsgCleaner(t *testing.T) {
 		[]int{1},
 		dataPreprocessorBase,
 	)
-	dataPreprocessorActor.Connect(streamer.NewDisjunctions(dataPreprocessorActor, 1))
+	dataPreprocessorActor.Connect(brokerpk.NewDisjunctions(dataPreprocessorActor, 1))
 
-	sender := streamer.NewDefaultProducer(
+	sender := brokerpk.NewDefaultProducer(
 		"sender",
 		[]string{
 			msgData,

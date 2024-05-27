@@ -6,7 +6,7 @@ type DefaultProducer struct {
 	bufferLengths []int
 }
 
-func NewDefaultProducer(name string, outputs []string, bufferLengths []int) Producer {
+func NewDefaultProducer(name string, outputs []string, bufferLengths []int) StreamProducer {
 	return &DefaultProducer{
 		name:          name,
 		outputs:       outputs,
@@ -14,14 +14,14 @@ func NewDefaultProducer(name string, outputs []string, bufferLengths []int) Prod
 	}
 }
 
-func (p *DefaultProducer) Name() string {
+func (p *DefaultProducer) GetName() string {
 	return p.name
 }
 
-func (p *DefaultProducer) Outputs() []string {
+func (p *DefaultProducer) GetOutputs() []string {
 	return p.outputs
 }
 
-func (p *DefaultProducer) BufferLengths() []int {
+func (p *DefaultProducer) GetBufferLengths() []int {
 	return p.bufferLengths
 }

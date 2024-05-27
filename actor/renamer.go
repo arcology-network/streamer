@@ -1,7 +1,7 @@
 package actor
 
 import (
-	streamer "github.com/arcology-network/component-lib/broker"
+	brokerpk "github.com/arcology-network/streamer/broker"
 )
 
 const (
@@ -27,13 +27,13 @@ func (r *Renamer) To(to string) *Renamer {
 	return r
 }
 
-func (r *Renamer) On(broker *streamer.StatefulBroker) *Renamer {
+func (r *Renamer) On(broker *brokerpk.StatefulStreamer) *Renamer {
 	renamer := NewActorEx(
 		RenamerName(r.from, r.to),
 		broker,
 		r,
 	)
-	renamer.Connect(streamer.NewDisjunctions(renamer, 1))
+	renamer.Connect(brokerpk.NewDisjunctions(renamer, 1))
 	return r
 }
 

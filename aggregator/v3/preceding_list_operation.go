@@ -1,15 +1,15 @@
 package aggregator
 
 import (
-	types "github.com/arcology-network/common-lib/types"
-	"github.com/arcology-network/component-lib/actor"
-	evmCommon "github.com/arcology-network/evm/common"
+	eushared "github.com/arcology-network/eu/shared"
+	"github.com/arcology-network/streamer/actor"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type PrecedingListOperation struct{}
 
 func (op *PrecedingListOperation) GetData(msg *actor.Message) (hashes []evmCommon.Hash, data []interface{}) {
-	results := msg.Data.(*types.Euresults)
+	results := msg.Data.(*eushared.Euresults)
 	if results == nil || len(*results) == 0 {
 		return
 	}

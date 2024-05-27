@@ -1,8 +1,8 @@
 package actor
 
 import (
-	streamer "github.com/arcology-network/component-lib/broker"
-	"github.com/arcology-network/component-lib/log"
+	"github.com/arcology-network/streamer/broker"
+	"github.com/arcology-network/streamer/log"
 )
 
 type Copyable interface {
@@ -10,7 +10,7 @@ type Copyable interface {
 }
 
 type MessageWrapper struct {
-	MsgBroker      *streamer.StatefulBroker
+	MsgBroker      *broker.StatefulStreamer
 	LatestMessage  *Message
 	WorkThreadName string
 }

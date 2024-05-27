@@ -3,9 +3,9 @@ package kafka
 import (
 	"strings"
 
-	"github.com/arcology-network/component-lib/actor"
-	"github.com/arcology-network/component-lib/kafka/lib"
-	"github.com/arcology-network/component-lib/log"
+	"github.com/arcology-network/streamer/actor"
+	"github.com/arcology-network/streamer/kafka/lib"
+	"github.com/arcology-network/streamer/log"
 )
 
 type KafkaDownloader struct {

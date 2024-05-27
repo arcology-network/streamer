@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/arcology-network/common-lib/common"
-	"github.com/arcology-network/component-lib/actor"
-	broker "github.com/arcology-network/component-lib/broker"
+	"github.com/arcology-network/streamer/actor"
+	"github.com/arcology-network/streamer/broker"
 )
 
 type OnMessageArrivedCallback func(msgs []*actor.Message) error
@@ -33,7 +33,7 @@ func (u *Uploader) SetCallback(cb OnMessageArrivedCallback) {
 	u.cb = cb
 }
 
-func (u *Uploader) Init(wtName string, broker *broker.StatefulBroker) {
+func (u *Uploader) Init(wtName string, broker *broker.StatefulStreamer) {
 	tu.Log("Uploader.Init")
 	u.broker = &actor.MessageWrapper{
 		MsgBroker:      broker,

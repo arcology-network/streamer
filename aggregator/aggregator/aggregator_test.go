@@ -7,17 +7,17 @@ import (
 	"time"
 
 	"github.com/arcology-network/common-lib/types"
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func Test_Inclusive(t *testing.T) {
 	size := 2
-	hashlist := make([]*evmCommon.Hash, size)
+	hashlist := make([]evmCommon.Hash, size)
 	successList := make([]bool, size)
 
 	for i := range hashlist {
 		hash := evmCommon.BytesToHash([]byte{byte(i), byte(i + 1), byte(i + 2)})
-		hashlist[i] = &hash
+		hashlist[i] = hash
 		successList[i] = true
 	}
 
@@ -31,7 +31,7 @@ func Test_Inclusive(t *testing.T) {
 
 	for i := range hashlist {
 		fmt.Printf("hashlist[%v]=%x\n", i, hashlist[i])
-		ag.OnDataReceived(*hashlist[i], "ok")
+		ag.OnDataReceived(hashlist[i], "ok")
 	}
 	ag.OnDataReceived(evmCommon.BytesToHash([]byte{byte(20)}), "ok")
 
@@ -104,10 +104,10 @@ func Test_mapprofermance(t *testing.T) {
 func Test_profermance(t *testing.T) {
 	ag := NewAggregator()
 
-	hashes := make([]*evmCommon.Hash, 500000)
+	hashes := make([]evmCommon.Hash, 500000)
 	for i := range hashes {
 		hash := evmCommon.BigToHash(big.NewInt(int64(i)))
-		hashes[i] = &hash
+		hashes[i] = hash
 		ag.OnDataReceived(hash, hash)
 	}
 

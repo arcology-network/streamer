@@ -8,68 +8,94 @@ import (
 	"sync"
 
 	"github.com/arcology-network/common-lib/common"
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
-	MsgInclusive              = "inclusive"
-	MsgConflictInclusive      = "conflictInclusive"
-	MsgBlockCompleted         = "blockCompleted"
-	MsgTxHash                 = "txhash"
-	MsgRcptHash               = "rcpthash"
-	MsgAcctHash               = "accthash"
-	MsgGasUsed                = "gasused"
-	MsgParentInfo             = "parentinfo"
-	MsgLocalParentInfo        = "localparentinfo"
-	MsgCheckedTxs             = "checkedTxs" // common-lib/types.*IncomingTxs
-	MsgTxBlocks               = "txBlocks"   // common-lib/types.*IncomingTxs
-	MsgTxLocals               = "txLocals"
-	MsgTxLocalsUnChecked      = "txLocalsunchecked" // main/modules/gateway/types.*TxsPack
-	MsgMetaBlock              = "metablock"
-	MsgSelectedTx             = "selectedtx"
-	MsgPendingBlock           = "pendingblock"
-	MsgExecTime               = "execTime"
-	MsgReceiptHashList        = "receiptHashList"
-	MsgEuResults              = "euResults"
-	MsgTxAccessRecords        = "txAccessRecords"
-	MsgExecutingLogs          = "executingLogs"
-	MsgPreProcessedEuResults  = "preProcessedEuResults"
-	MsgApcHandle              = "apchandle"  // concurrenturl/v2/common.DatastoreInterface
-	MsgNonceReady             = "nonceready" // concurrenturl/v2/common.DatastoreInterface
-	MsgCached                 = "cached"
-	MsgUrlUpdate              = "urlupdate"
-	MsgSchdState              = "schdstate"
-	MsgReapinglist            = "reapinglist"
-	MsgArbitrateReapinglist   = "arbitratereapinglist"
-	MsgExecuted               = "executed"
-	MsgCommitNonceUrl         = "commitNonceUrl"
-	MsgSelectedExecuted       = "selectedexecuted"
-	MsgListFulfilled          = "listfulfilled"
-	MsgApcBlock               = "apcBlock"
-	MsgSelectedReceipts       = "selectedReceipts"
-	MsgSelectedReceiptsHash   = "selectedReceiptsHash"
-	MsgReceipts               = "receipts"
-	MsgCheckingTxs            = "checkingtxs" // main/modules/tpp/types.*CheckingTxsPack
-	MsgMessager               = "messager"    // common-lib/types.*IncomingMsgs
-	MsgBlockCompleted_Success = "success"
-	MsgBlockCompleted_Failed  = "failed"
-	MsgMessagersReaped        = "messagersReaped"
-	MsgArbitrateList          = "arbitrateList"
-	MsgTxsToExecute           = "txsToExecute"      // common-lib/types.*ExecutorRequest
-	MsgTxsExecuteResults      = "txsExecuteResults" // main/modules/exec/v2.[]*ExecutorResponse
-	MsgEuResultSelected       = "euResultSelected"
-	MsgTxs                    = "txs"
-	MsgPrecedingList          = "precedingList"      // 3rd-party/eth/common.*[]*Hash
-	MsgPrecedingsEuresult     = "precedingsEuresult" // []interface{} (common-lib/types.[]*EuResult)
-	MsgReapCommand            = "reapCommand"
-	MsgAppHash                = "appHash"
-	MsgSpawnedRelations       = "spawnedRelations"
-	MsgGc                     = "gc"
+	MsgGeneralDB                  = "generalDB"
+	MsgNonceDB                    = "nonceDB"
+	MsgGeneralCompleted           = "generalCompleted"
+	MsgNonceCompleted             = "nonceCompleted"
+	MsgGeneralPrecommit           = "generalPrecommit"
+	MsgNoncePrecommit             = "noncePrecommit"
+	MsgGeneralCommit              = "generalCommit"
+	MsgNonceCommit                = "nonceCommit"
+	MsgInitDBGeneral              = "initdbGeneral"
+	MsgInitDBNonce                = "initdbNonce"
+	MsgInclusivePre               = "inclusivePre"
+	MsgInclusive                  = "inclusive"
+	MsgGenerationReapingListPre   = "generationReapingListPre"
+	MsgGenerationReapingList      = "generationReapingList"
+	MsgGenerationReapingCompleted = "generationReapingCompleted"
+	MsgConflictInclusive          = "conflictInclusive"
+	MsgBlockCompleted             = "blockCompleted"
+	MsgTxHash                     = "txhash"
+	MsgRcptHash                   = "rcpthash"
+	MsgAcctHash                   = "accthash"
+	MsgGasUsed                    = "gasused"
+	MsgBloom                      = "bloom"
+	MsgParentInfo                 = "parentinfo"
+	MsgLocalParentInfo            = "localparentinfo"
+	MsgCheckedTxs                 = "checkedTxs" // common-lib/types.*IncomingTxs
+	MsgTxBlocks                   = "txBlocks"   // common-lib/types.*IncomingTxs
+	MsgTxLocals                   = "txLocals"
+	MsgTxLocalsUnChecked          = "txLocalsunchecked" // main/modules/gateway/types.*TxsPack
+	MsgMetaBlock                  = "metablock"
+	MsgSelectedTx                 = "selectedtx"
+	MsgPendingBlock               = "pendingblock"
+	MsgExecTime                   = "execTime"
+	MsgReceiptHashList            = "receiptHashList"
+	MsgEuResults                  = "euResults"
+	MsgNonceEuResults             = "nonceEuResults"
+	MsgTxAccessRecords            = "txAccessRecords"
+	MsgExecutingLogs              = "executingLogs"
+	MsgPreProcessedEuResults      = "preProcessedEuResults"
+	MsgApcHandleInit              = "apchandleInit"
+	MsgApcHandle                  = "apchandle"
+	MsgNonceReady                 = "nonceready"
+	MsgCached                     = "cached"
+	MsgObjectCached               = "objectCached"
+	MsgChainConfig                = "chainConfig"
+	MsgUrlUpdate                  = "urlupdate"
+	MsgTransactionalAddCompleted  = "transactionalAddCompleted"
+	MsgSchdState                  = "schdstate"
+	MsgReapinglist                = "reapinglist"
+	MsgArbitrateReapinglist       = "arbitratereapinglist"
+	MsgExecuted                   = "executed"
+	MsgCommitNonceUrl             = "commitNonceUrl"
+	MsgSelectedExecuted           = "selectedexecuted"
+	MsgListFulfilled              = "listfulfilled"
+	MsgApcBlock                   = "apcBlock"
+	MsgSelectedReceipts           = "selectedReceipts"
+	MsgSelectedReceiptsHash       = "selectedReceiptsHash"
+	MsgReceipts                   = "receipts"
+	MsgCheckingTxs                = "checkingtxs" // main/modules/tpp/types.*CheckingTxsPack
+	MsgMessager                   = "messager"    // common-lib/types.*IncomingMsgs
+	MsgBlockCompleted_Success     = "success"
+	MsgBlockCompleted_Failed      = "failed"
+	MsgMessagersReaped            = "messagersReaped"
+	MsgArbitrateList              = "arbitrateList"
+	MsgTxsToExecute               = "txsToExecute"      // common-lib/types.*ExecutorRequest
+	MsgTxsExecuteResults          = "txsExecuteResults" // main/modules/exec/v2.[]*ExecutorResponse
+	MsgEuResultSelected           = "euResultSelected"
+	MsgTxs                        = "txs"
+	MsgPrecedingList              = "precedingList"      // 3rd-party/eth/common.*[]*Hash
+	MsgPrecedingsEuresult         = "precedingsEuresult" // []interface{} (common-lib/types.[]*EuResult)
+	MsgReapCommand                = "reapCommand"
+	MsgOpCommand                  = "opCommand"
+	MsgBlockParams                = "blockParams"
+	MsgWithDrawHash               = "withDrawHash"
+	MsgSignerType                 = "signerType"
+	MsgAppHash                    = "appHash"
+	MsgSpawnedRelations           = "spawnedRelations"
+	MsgGc                         = "gc"
 
-	MsgInitDB                 = "initdb"
+	MsgInitDB = "initdb"
+
 	MsgBlockStart             = "blockstart"
 	MsgBlockEnd               = "blockend"
 	MsgStorageUp              = "storage.up"
+	MsgCoinbase               = "coinbase"
 	MsgFastSyncDone           = "storage.fastsyncdone"
 	MsgConsensusMaxPeerHeight = "consensus.maxpeerheight"
 	MsgConsensusUp            = "consensus.up"
@@ -105,6 +131,7 @@ type BlockStart struct {
 	Timestamp *big.Int
 	Coinbase  evmCommon.Address
 	Height    uint64
+	Extra     []byte
 }
 
 type Comparable interface {

@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ActorInterface interface {
+type Actor interface {
 	Consume(data interface{})
 }
 
@@ -17,21 +17,21 @@ type StreamController interface {
 	Notify(name string, data interface{})
 	Serve()
 	GenerateDotLabel() string
-	GetActor() ActorInterface
+	GetActor() Actor
 }
 
 type Conjunctions struct {
-	triggers       map[string]chan interface{}
-	indices        map[string]int
-	values         []interface{}
-	ActorInterface ActorInterface
+	triggers map[string]chan interface{}
+	indices  map[string]int
+	values   []interface{}
+	Actor    Actor
 }
 
-func NewConjunctions(actor ActorInterface) StreamController {
+func NewConjunctions(actor Actor) StreamController {
 	return &Conjunctions{
-		triggers:       make(map[string]chan interface{}),
-		indices:        make(map[string]int),
-		ActorInterface: actor,
+		triggers: make(map[string]chan interface{}),
+		indices:  make(map[string]int),
+		Actor:    actor,
 	}
 }
 
@@ -69,7 +69,7 @@ func (conj *Conjunctions) Serve() {
 
 		valueCopy := make([]interface{}, len(conj.values))
 		copy(valueCopy, conj.values)
-		conj.ActorInterface.Consume(valueCopy)
+		conj.Actor.Consume(valueCopy)
 	}
 }
 
@@ -87,8 +87,8 @@ func (conj *Conjunctions) GenerateDotLabel() string {
 	return label
 }
 
-func (conj *Conjunctions) GetActor() ActorInterface {
-	return conj.ActorInterface
+func (conj *Conjunctions) GetActor() Actor {
+	return conj.Actor
 }
 
 type Aggregated struct {
@@ -97,16 +97,16 @@ type Aggregated struct {
 }
 
 type Disjunctions struct {
-	chans          map[string]chan interface{}
-	aggrChan       chan interface{}
-	ActorInterface ActorInterface
+	chans    map[string]chan interface{}
+	aggrChan chan interface{}
+	Actor    Actor
 }
 
-func NewDisjunctions(actor ActorInterface, bufSize int) *Disjunctions {
+func NewDisjunctions(actor Actor, bufSize int) *Disjunctions {
 	return &Disjunctions{
-		chans:          make(map[string]chan interface{}),
-		aggrChan:       make(chan interface{}, bufSize),
-		ActorInterface: actor,
+		chans:    make(map[string]chan interface{}),
+		aggrChan: make(chan interface{}, bufSize),
+		Actor:    actor,
 	}
 }
 
@@ -140,7 +140,7 @@ func (dis *Disjunctions) Serve() {
 		log.WithFields(log.Fields{
 			"channel": aggr.(Aggregated).Name,
 		}).Debug("new item")
-		dis.ActorInterface.Consume(aggr)
+		dis.Actor.Consume(aggr)
 	}
 }
 
@@ -158,26 +158,26 @@ func (dis *Disjunctions) GenerateDotLabel() string {
 	return label
 }
 
-func (dis *Disjunctions) GetActor() ActorInterface {
-	return dis.ActorInterface
+func (dis *Disjunctions) GetActor() Actor {
+	return dis.Actor
 }
 
 type CustomizableController struct {
-	inputIndices   map[string]int
-	inputValues    []interface{}
-	chans          map[string]chan interface{}
-	pf             PassableFunc
-	ActorInterface ActorInterface
+	inputIndices map[string]int
+	inputValues  []interface{}
+	chans        map[string]chan interface{}
+	pf           PassableFunc
+	Actor        Actor
 }
 
 type PassableFunc func(inputs interface{}) bool
 
-func NewCustomizableController(actor ActorInterface, pf PassableFunc) *CustomizableController {
+func NewCustomizableController(actor Actor, pf PassableFunc) *CustomizableController {
 	return &CustomizableController{
-		inputIndices:   make(map[string]int),
-		chans:          make(map[string]chan interface{}),
-		pf:             pf,
-		ActorInterface: actor,
+		inputIndices: make(map[string]int),
+		chans:        make(map[string]chan interface{}),
+		pf:           pf,
+		Actor:        actor,
 	}
 }
 
@@ -210,7 +210,7 @@ func (cc *CustomizableController) Serve() {
 
 			valueCopy := make([]interface{}, len(cc.inputValues))
 			copy(valueCopy, cc.inputValues)
-			cc.ActorInterface.Consume(valueCopy)
+			cc.Actor.Consume(valueCopy)
 		} else {
 			log.WithFields(log.Fields{
 				"channel": chosen,
@@ -240,17 +240,17 @@ func (cc *CustomizableController) GenerateDotLabel() string {
 	return label
 }
 
-func (cc *CustomizableController) GetActor() ActorInterface {
-	return cc.ActorInterface
+func (cc *CustomizableController) GetActor() Actor {
+	return cc.Actor
 }
 
 type ShortCircuitActor struct {
 	in       chan interface{}
-	consumer Consumer
+	consumer StreamConsumer
 	name     string
 }
 
-func NewShortCircuitActor(consumer Consumer, name string) *ShortCircuitActor {
+func NewShortCircuitActor(consumer StreamConsumer, name string) *ShortCircuitActor {
 	return &ShortCircuitActor{
 		in:       make(chan interface{}),
 		consumer: consumer,
@@ -264,7 +264,7 @@ func (scw *ShortCircuitActor) Consume(data interface{}) {
 
 func (scw *ShortCircuitActor) Serve() {
 	for i := range scw.in {
-		scw.consumer.StreamController().Notify(scw.name, Aggregated{Name: scw.name, Data: i})
+		scw.consumer.GetStreamController().Notify(scw.name, Aggregated{Name: scw.name, Data: i})
 	}
 }
 

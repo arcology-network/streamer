@@ -1,6 +1,6 @@
 package aggregator
 
-import evmCommon "github.com/arcology-network/evm/common"
+import evmCommon "github.com/ethereum/go-ethereum/common"
 
 type AggregateCollection struct {
 	accumulated []interface{}

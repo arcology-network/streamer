@@ -2,8 +2,8 @@ package aggregator
 
 import (
 	types "github.com/arcology-network/common-lib/types"
-	"github.com/arcology-network/component-lib/actor"
-	evmCommon "github.com/arcology-network/evm/common"
+	"github.com/arcology-network/streamer/actor"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ReceiptHashOperation struct{}
@@ -29,12 +29,13 @@ func (op *ReceiptHashOperation) GetData(msg *actor.Message) ([]evmCommon.Hash, [
 }
 
 func (op *ReceiptHashOperation) GetList(msg *actor.Message) []evmCommon.Hash {
-	list := msg.Data.(*types.InclusiveList).HashList
-	hashes := make([]evmCommon.Hash, 0, len(list))
-	for i := range list {
-		hashes = append(hashes, *list[i])
-	}
-	return hashes
+	// list := msg.Data.(*types.InclusiveList).HashList
+	// hashes := make([]evmCommon.Hash, 0, len(list))
+	// for i := range list {
+	// 	hashes = append(hashes, list[i])
+	// }
+	// return hashes
+	return msg.Data.(*types.InclusiveList).HashList
 }
 
 func (op *ReceiptHashOperation) OnListFulfilled(data []interface{}, broker *actor.MessageWrapper) {

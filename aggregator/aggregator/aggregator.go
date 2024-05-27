@@ -1,11 +1,11 @@
 package aggregator
 
 import (
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type Hashable interface {
-	GetList() (selectList []*evmCommon.Hash, clearList []*evmCommon.Hash)
+	GetList() (selectList []evmCommon.Hash, clearList []evmCommon.Hash)
 }
 
 type Aggregator struct {
@@ -17,7 +17,7 @@ func NewAggregator() *Aggregator {
 		selector: NewSelector(),
 	}
 }
-func (a *Aggregator) GetClearInfos() []*evmCommon.Hash {
+func (a *Aggregator) GetClearInfos() []evmCommon.Hash {
 	return a.selector.clearance
 }
 func (a *Aggregator) GetRemaining() int {

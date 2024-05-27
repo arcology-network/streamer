@@ -3,7 +3,7 @@ package actor
 import (
 	"reflect"
 
-	streamer "github.com/arcology-network/component-lib/broker"
+	"github.com/arcology-network/streamer/broker"
 )
 
 type LinkedActor interface {
@@ -95,7 +95,7 @@ func (base *BaseLinkedActor) InitMsgs() []*Message {
 	return []*Message{}
 }
 
-func (base *BaseLinkedActor) Init(name string, broker *streamer.StatefulBroker) {
+func (base *BaseLinkedActor) Init(name string, broker *broker.StatefulStreamer) {
 	base.WorkerThread.Init(name, broker)
 	if base.next != nil {
 		base.next.Init(name, broker)

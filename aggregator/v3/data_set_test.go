@@ -3,7 +3,7 @@ package aggregator
 import (
 	"testing"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 func TestDataSet(t *testing.T) {

@@ -24,46 +24,46 @@ var (
 	)
 )
 
-type StatefulBroker struct {
-	producers []Producer
-	consumers []Consumer
+type StatefulStreamer struct {
+	producers []StreamProducer
+	consumers []StreamConsumer
 	buffers   map[string]streamBuffer
 }
 
-type Producer interface {
-	Name() string
-	Outputs() []string
-	BufferLengths() []int
+type StreamProducer interface {
+	GetName() string
+	GetOutputs() []string
+	GetBufferLengths() []int
 }
 
-type Consumer interface {
-	Name() string
-	Inputs() []string
-	StreamController() StreamController
+type StreamConsumer interface {
+	GetName() string
+	GetInputs() []string
+	GetStreamController() StreamController
 }
 
-func NewStatefulBroker() *StatefulBroker {
-	return &StatefulBroker{
+func NewStatefulStreamer() *StatefulStreamer {
+	return &StatefulStreamer{
 		buffers: make(map[string]streamBuffer),
 	}
 }
 
-func (ss *StatefulBroker) RegisterProducer(p Producer) {
+func (ss *StatefulStreamer) RegisterProducer(p StreamProducer) {
 	ss.producers = append(ss.producers, p)
 }
 
-func (ss *StatefulBroker) RegisterConsumer(c Consumer) {
+func (ss *StatefulStreamer) RegisterConsumer(c StreamConsumer) {
 	ss.consumers = append(ss.consumers, c)
 }
 
-func (ss *StatefulBroker) Send(name string, data interface{}) {
+func (ss *StatefulStreamer) Send(name string, data interface{}) {
 	ss.buffers[name].Add(data)
 }
 
-func (ss *StatefulBroker) Serve() {
+func (ss *StatefulStreamer) Serve() {
 	for _, p := range ss.producers {
-		outputs := p.Outputs()
-		lengths := p.BufferLengths()
+		outputs := p.GetOutputs()
+		lengths := p.GetBufferLengths()
 		for i := range outputs {
 			if lengths[i] != 0 {
 				ss.buffers[outputs[i]] = newDefaultStreamBuffer(outputs[i], lengths[i])
@@ -74,15 +74,15 @@ func (ss *StatefulBroker) Serve() {
 	}
 
 	for _, c := range ss.consumers {
-		inputs := c.Inputs()
+		inputs := c.GetInputs()
 		for i := range inputs {
 			if inputs[i][0] == '#' {
-				c.StreamController().GetListener(inputs[i])
+				c.GetStreamController().GetListener(inputs[i])
 				continue
 			}
-			ss.buffers[inputs[i]].RegisterListener(c.StreamController().GetListener(inputs[i]))
+			ss.buffers[inputs[i]].RegisterListener(c.GetStreamController().GetListener(inputs[i]))
 		}
-		go c.StreamController().Serve()
+		go c.GetStreamController().Serve()
 	}
 
 	for _, buf := range ss.buffers {
@@ -90,43 +90,43 @@ func (ss *StatefulBroker) Serve() {
 	}
 }
 
-func (ss *StatefulBroker) GenerateDot() string {
+func (ss *StatefulStreamer) GenerateDot() string {
 	str := "digraph g {\n"
 	str += "\tStreamer [shape=record]\n"
 	for _, p := range ss.producers {
-		outputs := p.Outputs()
+		outputs := p.GetOutputs()
 		for _, o := range outputs {
-			str += "\t" + p.Name() + " -> Streamer [label=\"" + o + "\", shape=record]\n"
-			str += "\t" + p.Name() + " [shape=record]\n"
+			str += "\t" + p.GetName() + " -> Streamer [label=\"" + o + "\", shape=record]\n"
+			str += "\t" + p.GetName() + " [shape=record]\n"
 		}
 	}
 	intermediate := make(map[string]struct{})
 	for _, c := range ss.consumers {
-		inputs := c.Inputs()
+		inputs := c.GetInputs()
 		for _, i := range inputs {
 			if i[0] == '#' {
 				intermediate[string(i[1:])] = struct{}{}
 				continue
 			}
-			str += "\tStreamer -> " + c.Name() + " [label=\"" + i + "\"]\n"
+			str += "\tStreamer -> " + c.GetName() + " [label=\"" + i + "\"]\n"
 		}
-		worker := c.StreamController().GetActor()
+		worker := c.GetStreamController().GetActor()
 		switch w := worker.(type) {
 		case *ShortCircuitActor:
-			str += "\t" + c.Name() + " -> " + w.consumer.Name() + " [label=\"" + w.name + "\"]\n"
+			str += "\t" + c.GetName() + " -> " + w.consumer.GetName() + " [label=\"" + w.name + "\"]\n"
 		default:
-			str += "\t" + c.Name() + " -> " + reflect.TypeOf(w).Elem().Name() + " [shape=circle]\n"
+			str += "\t" + c.GetName() + " -> " + reflect.TypeOf(w).Elem().Name() + " [shape=circle]\n"
 		}
 	}
 	rank := "\t{ rank=same "
 	for _, c := range ss.consumers {
-		str += "\t" + c.Name() + " [label=<<b>" + c.Name() + "</b><br/>"
-		str += c.StreamController().GenerateDotLabel() + ">,"
-		if _, ok := intermediate[c.Name()]; ok {
+		str += "\t" + c.GetName() + " [label=<<b>" + c.GetName() + "</b><br/>"
+		str += c.GetStreamController().GenerateDotLabel() + ">,"
+		if _, ok := intermediate[c.GetName()]; ok {
 			str += " shape=record style=rounded color=grey bgcolor=grey"
 		} else {
 			str += " shape=record"
-			rank += c.Name() + " "
+			rank += c.GetName() + " "
 		}
 		str += "]\n"
 	}

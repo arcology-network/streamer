@@ -3,21 +3,21 @@ package actor
 import (
 	"fmt"
 
-	streamer "github.com/arcology-network/component-lib/broker"
-	"github.com/arcology-network/component-lib/log"
+	brokerpk "github.com/arcology-network/streamer/broker"
+	"github.com/arcology-network/streamer/log"
 )
 
 type Actor struct {
 	receiver chan interface{}
 
-	Producer    streamer.Producer
+	Producer    brokerpk.StreamProducer
 	name        string
 	subscribeTo []string
 	workerThd   IWorker
-	broker      *streamer.StatefulBroker
+	broker      *brokerpk.StatefulStreamer
 }
 
-func NewActor(name string, broker *streamer.StatefulBroker, subscribeTo []string, publishTo []string, bufferLen []int, workerThd IWorker) *Actor {
+func NewActor(name string, broker *brokerpk.StatefulStreamer, subscribeTo []string, publishTo []string, bufferLen []int, workerThd IWorker) *Actor {
 	actor := &Actor{
 		receiver:    make(chan interface{}),
 		name:        name,
@@ -25,7 +25,7 @@ func NewActor(name string, broker *streamer.StatefulBroker, subscribeTo []string
 		broker:      broker,
 	}
 	if publishTo != nil || len(publishTo) > 0 {
-		actor.Producer = streamer.NewDefaultProducer(name+"-producer", publishTo, bufferLen)
+		actor.Producer = brokerpk.NewDefaultProducer(name+"-producer", publishTo, bufferLen)
 	}
 
 	actor.SetWorker(workerThd)
@@ -43,7 +43,7 @@ func NewActor(name string, broker *streamer.StatefulBroker, subscribeTo []string
 	return actor
 }
 
-func NewActorEx(name string, broker *streamer.StatefulBroker, worker IWorkerEx) *Actor {
+func NewActorEx(name string, broker *brokerpk.StatefulStreamer, worker IWorkerEx) *Actor {
 	var publishTo []string
 	var bufferLen []int
 	for output, bufferSize := range worker.Outputs() {
@@ -54,12 +54,12 @@ func NewActorEx(name string, broker *streamer.StatefulBroker, worker IWorkerEx) 
 	return NewActor(name, broker, inputs, publishTo, bufferLen, worker)
 }
 
-func (actor *Actor) Connect(controller streamer.StreamController) {
+func (actor *Actor) Connect(controller brokerpk.StreamController) {
 	if actor.Producer != nil {
 		actor.broker.RegisterProducer(actor.Producer)
 	}
 
-	actor.broker.RegisterConsumer(streamer.NewDefaultConsumer(actor.name+"-consumer", actor.subscribeTo, controller))
+	actor.broker.RegisterConsumer(brokerpk.NewDefaultConsumer(actor.name+"-consumer", actor.subscribeTo, controller))
 }
 
 // SetWorkUint set one uint for work
@@ -80,8 +80,8 @@ func (actor *Actor) Serve() {
 			for _, p := range params {
 				actor.parseParams(&msgs, p)
 			}
-		case streamer.Aggregated:
-			param := v.(streamer.Aggregated)
+		case brokerpk.Aggregated:
+			param := v.(brokerpk.Aggregated)
 			actor.parseParams(&msgs, param.Data)
 		}
 
@@ -152,11 +152,11 @@ func (actor *Actor) parseParams(msgs *[]*Message, data interface{}) {
 		for _, pp := range pparams {
 			*msgs = append(*msgs, pp.(*Message))
 		}
-	case streamer.Aggregated:
-		param := data.(streamer.Aggregated)
+	case brokerpk.Aggregated:
+		param := data.(brokerpk.Aggregated)
 		switch param.Data.(type) {
-		case streamer.Aggregated:
-			pparam := param.Data.(streamer.Aggregated)
+		case brokerpk.Aggregated:
+			pparam := param.Data.(brokerpk.Aggregated)
 
 			*msgs = append(*msgs, pparam.Data.(*Message))
 		case []interface{}:

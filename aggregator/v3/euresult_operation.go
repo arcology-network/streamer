@@ -2,8 +2,9 @@ package aggregator
 
 import (
 	types "github.com/arcology-network/common-lib/types"
-	"github.com/arcology-network/component-lib/actor"
-	evmCommon "github.com/arcology-network/evm/common"
+	eushared "github.com/arcology-network/eu/shared"
+	"github.com/arcology-network/streamer/actor"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type EuResultOperation struct {
@@ -11,7 +12,7 @@ type EuResultOperation struct {
 }
 
 func (op *EuResultOperation) GetData(msg *actor.Message) (hashes []evmCommon.Hash, data []interface{}) {
-	results := msg.Data.(*types.Euresults)
+	results := msg.Data.(*eushared.Euresults)
 	if results == nil {
 		return
 	}
@@ -27,7 +28,7 @@ func (op *EuResultOperation) GetList(msg *actor.Message) (hashes []evmCommon.Has
 	list := msg.Data.(*types.InclusiveList)
 	for i, hash := range list.HashList {
 		if list.Successful[i] {
-			hashes = append(hashes, *hash)
+			hashes = append(hashes, hash)
 		}
 	}
 	return

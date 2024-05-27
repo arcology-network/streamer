@@ -3,7 +3,7 @@ package aggregator
 import (
 	"sync"
 
-	evmCommon "github.com/arcology-network/evm/common"
+	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type MissingList struct {
@@ -46,31 +46,31 @@ func (m *MissingList) IsGenerated() bool {
 }
 
 // put a element into missinglist
-func (m *MissingList) Put(hash *evmCommon.Hash, idx int) {
+func (m *MissingList) Put(hash evmCommon.Hash, idx int) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 
-	m.missingList[*hash] = idx
+	m.missingList[hash] = idx
 
 }
 
 // remove a element from missinglist
-func (m *MissingList) RemoveFromMissing(hash *evmCommon.Hash) (bool, int) {
-	if idx, ok := m.missingList[*hash]; ok {
-		delete(m.missingList, *hash)
+func (m *MissingList) RemoveFromMissing(hash evmCommon.Hash) (bool, int) {
+	if idx, ok := m.missingList[hash]; ok {
+		delete(m.missingList, hash)
 		return true, idx
 	}
 	return false, -1
 }
 
 // remove a element from missinglist
-func (m *MissingList) Remove(hash *evmCommon.Hash) {
-	delete(m.missingList, *hash)
+func (m *MissingList) Remove(hash evmCommon.Hash) {
+	delete(m.missingList, hash)
 }
 
 // the hash in missings or not
-func (m *MissingList) IsExist(hash *evmCommon.Hash) (bool, int) {
-	if idx, ok := m.missingList[*hash]; ok {
+func (m *MissingList) IsExist(hash evmCommon.Hash) (bool, int) {
+	if idx, ok := m.missingList[hash]; ok {
 		return true, idx
 	}
 	return false, -1
