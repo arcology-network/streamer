@@ -50,7 +50,7 @@ func NewStatefulAggrSelector(concurrency int, groupId string, dataMsg string, li
 		clearMsg: clearMsg,
 		ds:       NewDataSet(),
 		op:       op,
-		state:    aggrStateDone,
+		state:    aggrStateInit,
 	}
 	aggr.Set(concurrency, groupId)
 	return aggr
