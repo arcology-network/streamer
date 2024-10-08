@@ -91,6 +91,12 @@ github.com/anacrolix/utp v0.0.0-20180219060659-9e0e1d1d0572/go.mod h1:MDwc+vsGEq
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/apache/thrift v0.13.0 h1:5hryIiq9gtn+MiLVn0wP37kb/uTeRZgN08WoCsAhIhI=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
+github.com/arcology-network/common-lib v1.9.1-0.20240828101906-f4d64ec48d31 h1:w1q0f6ae1HO0vgB6ubYRB1rKTyKOsouf67T/BVBOqQ8=
+github.com/arcology-network/common-lib v1.9.1-0.20240828101906-f4d64ec48d31/go.mod h1:uXYMdmuImBAmas/+PM87wX2lje40wGkux5i1jI0fG6A=
+github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845 h1:xO6JuSR675hwZ2QMw7PeMGMyQelSvBv7f13jCMWKbKg=
+github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845/go.mod h1:knpf25IdP1ITXH/61PY9RyoN8Ndp907eto5lOq1eV3w=
+github.com/arcology-network/eu v0.0.0-20241008082000-bad0ad26d840 h1:PGa5AwowvaA8RDzke10sdq4ldIXF8AFD7oLfaRJ4IN0=
+github.com/arcology-network/eu v0.0.0-20241008082000-bad0ad26d840/go.mod h1:A8bI5ajm8dCrnE0XiX/wmxKsxkobqkJOlNBEmkzFbuA=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878/go.mod h1:3AMJUQhVx52RsWOnlkpikZr01T/yAVN2gn0861vByNg=
