@@ -135,6 +135,8 @@ const (
 
 	MsgP2pReceived = "p2p.received"
 	MsgP2pSent     = "p2p.sent"
+
+	MsgFeedBacks = "feedbacks"
 )
 
 // BlockStart used with MsgBlockStart.
