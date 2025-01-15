@@ -10,7 +10,7 @@ replace github.com/ethereum/go-ethereum v1.14.8 => ../concurrent-evm/
 
 // replace github.com/arcology-network/consensus-engine => ../consensus-engine/
 
-replace github.com/arcology-network/storage-committer => ../storage-committer/
+// replace github.com/arcology-network/storage-committer => ../storage-committer/
 
 // replace github.com/arcology-network/eu => ../eu
 
@@ -30,9 +30,10 @@ require (
 )
 
 require (
-	github.com/arcology-network/common-lib v1.9.1-0.20240828101906-f4d64ec48d31
+	github.com/arcology-network/common-lib v1.9.1-0.20250114032930-d9548e98ccd0
 	github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845
-	github.com/arcology-network/eu v0.0.0-20241008082000-bad0ad26d840
+	github.com/arcology-network/eu v0.0.0-20250115083824-5c023a761226
+	github.com/arcology-network/storage-committer v1.9.1-0.20250115083055-49b463a27754 // indirect
 	github.com/ethereum/go-ethereum v1.14.8
 )
 
@@ -47,7 +48,6 @@ require (
 	github.com/anacrolix/sync v0.2.0 // indirect
 	github.com/anacrolix/utp v0.0.0-20180219060659-9e0e1d1d0572 // indirect
 	github.com/apache/thrift v0.13.0 // indirect
-	github.com/arcology-network/storage-committer v1.9.1-0.20241008080418-618c462bbca5 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
