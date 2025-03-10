@@ -76,7 +76,9 @@ func PostProcess(receipts []*ethTypes.Receipt) []*ethTypes.Receipt {
 	for i := range logs {
 		txhash := logs[i].Topics[1]
 		destReceipt := mpReceipts[txhash]
-
+		if destReceipt == nil {
+			continue
+		}
 		topics, data := ParseData(logs[i].Data[64:])
 
 		logs[i].TxHash = txhash
