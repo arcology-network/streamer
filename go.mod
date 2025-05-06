@@ -30,10 +30,10 @@ require (
 )
 
 require (
-	github.com/arcology-network/common-lib v1.9.1-0.20250310070859-c426a24990fb
+	github.com/arcology-network/common-lib v1.9.1-0.20250506135036-0987f5477aab
 	github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845
-	github.com/arcology-network/eu v0.0.0-20250310075123-5fb33114479e
-	github.com/arcology-network/storage-committer v1.9.1-0.20250310074249-58b948eb5f8a // indirect
+	github.com/arcology-network/eu v0.0.0-20250506143430-931cffe230c2
+	github.com/arcology-network/storage-committer v1.9.1-0.20250506141106-d93badc23ca3 // indirect
 	github.com/ethereum/go-ethereum v1.14.8
 )
 
@@ -55,6 +55,7 @@ require (
 	github.com/buger/jsonparser v0.0.0-20191204142016-1a29609e0929 // indirect
 	github.com/cenk/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cheekybits/genny v1.0.0 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
