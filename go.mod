@@ -6,13 +6,13 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.29.0
 
 replace github.com/ethereum/go-ethereum v1.14.8 => ../concurrent-evm/
 
-replace github.com/arcology-network/common-lib => ../common-lib/
+// replace github.com/arcology-network/common-lib => ../common-lib/
 
 replace github.com/arcology-network/consensus-engine => ../consensus-engine/
 
-replace github.com/arcology-network/storage-committer => ../storage-committer/
+// replace github.com/arcology-network/storage-committer => ../storage-committer/
 
-replace github.com/arcology-network/eu => ../eu
+// replace github.com/arcology-network/eu => ../eu
 
 require (
 	github.com/BurntSushi/toml v1.2.1
@@ -30,11 +30,14 @@ require (
 )
 
 require (
-	github.com/arcology-network/common-lib v1.9.1-0.20250506135036-0987f5477aab
 	github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845
-	github.com/arcology-network/eu v0.0.0-20250506143430-931cffe230c2
-	github.com/arcology-network/storage-committer v1.9.1-0.20250506141106-d93badc23ca3 // indirect
 	github.com/ethereum/go-ethereum v1.14.8
+)
+
+require (
+	github.com/arcology-network/common-lib v1.9.1-0.20250613001412-0529984b08ff
+	github.com/arcology-network/eu v0.0.0-20250613011027-19d5049c61bc
+	github.com/arcology-network/storage-committer v1.9.1-0.20250613004728-e65a2bc7058d // indirect
 )
 
 require (
