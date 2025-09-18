@@ -93,6 +93,12 @@ github.com/anacrolix/utp v0.0.0-20180219060659-9e0e1d1d0572/go.mod h1:MDwc+vsGEq
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/apache/thrift v0.13.0 h1:5hryIiq9gtn+MiLVn0wP37kb/uTeRZgN08WoCsAhIhI=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
+github.com/arcology-network/common-lib v1.9.1-0.20250918121719-e35aaab097f3 h1:CuOKM7GqeOPA5e3c4MwFT+9RPAsQZDym5lyYruJpV28=
+github.com/arcology-network/common-lib v1.9.1-0.20250918121719-e35aaab097f3/go.mod h1:3inydlHRr5vNSS367n5+iEERiCO8FvnaSB3yEmCEi4E=
+github.com/arcology-network/eu v0.0.0-20250918125206-14ef66343bb4 h1:D0KD98M92fYfsjd9O86meKfwKSBYewa3ONAdPrLFtsg=
+github.com/arcology-network/eu v0.0.0-20250918125206-14ef66343bb4/go.mod h1:x69zoqd6RGoK4CKzQd1bt1E4/ouzMnzy6UhTDBTFB80=
+github.com/arcology-network/storage-committer v1.9.1-0.20250918123336-0d750d223a7b h1:JBLiQZ+5AxsCPXj61LBAoQ+22B6MBAzDC9Ieu5NNT3g=
+github.com/arcology-network/storage-committer v1.9.1-0.20250918123336-0d750d223a7b/go.mod h1:Eg0aEuWtgtb2eQ80NVpY+1v0iytFYlZZuSB6HdCjKHY=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878/go.mod h1:3AMJUQhVx52RsWOnlkpikZr01T/yAVN2gn0861vByNg=
