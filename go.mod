@@ -4,11 +4,11 @@ go 1.22
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.29.0
 
-replace github.com/ethereum/go-ethereum v1.14.8 => ../concurrent-evm/
+replace github.com/ethereum/go-ethereum v1.14.8 => github.com/arcology-network/concurrent-evm v0.0.0-20250714082425-8009ff40403f
 
 // replace github.com/arcology-network/common-lib => ../common-lib/
 
-replace github.com/arcology-network/consensus-engine => ../consensus-engine/
+// replace github.com/arcology-network/consensus-engine => ../consensus-engine/
 
 // replace github.com/arcology-network/storage-committer => ../storage-committer/
 
@@ -29,17 +29,13 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
+require github.com/ethereum/go-ethereum v1.14.8
+
 require (
+	github.com/arcology-network/common-lib v1.9.1-0.20251112075051-e3046bddd333
 	github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845
-	github.com/ethereum/go-ethereum v1.14.8
+	github.com/arcology-network/eu v0.0.0-20251114133829-738e3fdeabb8
 )
-
-require (
-	github.com/arcology-network/common-lib v1.9.1-0.20250918121719-e35aaab097f3
-	github.com/arcology-network/eu v0.0.0-20250918125206-14ef66343bb4
-)
-
-require github.com/arcology-network/storage-committer v1.9.1-0.20250918123336-0d750d223a7b // indirect
 
 require (
 	github.com/DataDog/zstd v1.5.5 // indirect
@@ -52,6 +48,7 @@ require (
 	github.com/anacrolix/sync v0.2.0 // indirect
 	github.com/anacrolix/utp v0.0.0-20180219060659-9e0e1d1d0572 // indirect
 	github.com/apache/thrift v0.13.0 // indirect
+	github.com/arcology-network/storage-committer v1.9.1-0.20251112080202-1f75b95ce882 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
