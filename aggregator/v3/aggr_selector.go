@@ -19,36 +19,36 @@ package aggregator
 
 import (
 	"github.com/arcology-network/streamer/actor"
+	scommon "github.com/arcology-network/streamer/common"
 	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type AggrOperation interface {
-	GetData(msg *actor.Message) ([]evmCommon.Hash, []interface{})
-	GetList(msg *actor.Message) []evmCommon.Hash
-	OnListFulfilled(data []interface{}, broker *actor.MessageWrapper)
+	GetData(msg *scommon.Message) ([]evmCommon.Hash, []interface{})
+	GetList(msg *scommon.Message) []evmCommon.Hash
+	OnListFulfilled(data []interface{}, broker *actor.ExecutionContext)
 	Outputs() map[string]int
 	Config(params map[string]interface{})
 }
 
 type AggrSelector struct {
-	actor.WorkerThread
-
 	dataMsg  string
 	listMsg  string
 	clearMsg string
 	ds       *DataSet
 	op       AggrOperation
+	name     string
 }
 
-func NewAggrSelector(concurrency int, groupId string, dataMsg string, listMsg string, clearMsg string, op AggrOperation) *AggrSelector {
+func NewAggrSelector(name string, dataMsg string, listMsg string, clearMsg string, op AggrOperation) *AggrSelector {
 	aggr := &AggrSelector{
 		dataMsg:  dataMsg,
 		listMsg:  listMsg,
 		clearMsg: clearMsg,
 		ds:       NewDataSet(),
 		op:       op,
+		name:     name,
 	}
-	aggr.Set(concurrency, groupId)
 	return aggr
 }
 
@@ -62,33 +62,33 @@ func (aggr *AggrSelector) Outputs() map[string]int {
 func (aggr *AggrSelector) Config(params map[string]interface{}) {
 	aggr.op.Config(params)
 }
-func (aggr *AggrSelector) OnStart() {}
+func (aggr *AggrSelector) RegisterActions(reg actor.ActionRegistrar) {
+	reg.Register(aggr.dataMsg, aggr.ReceivedData)
+	reg.Register(aggr.listMsg, aggr.ReceivedList)
+	reg.Register(aggr.clearMsg, aggr.ReceivedClearCommand)
+}
 
-func (aggr *AggrSelector) OnMessageArrived(msgs []*actor.Message) error {
-	if len(msgs) > 1 {
-		panic("too many messages received")
-	}
-
-	msg := msgs[0]
-	switch msg.Name {
-	case aggr.dataMsg:
-		hashes, data := aggr.op.GetData(msg)
-		for i, hash := range hashes {
-			lists := aggr.ds.Add(hash, data[i], msg.Height)
-			for _, list := range lists {
-				aggr.op.OnListFulfilled(list, aggr.MsgBroker)
-			}
+func (aggr *AggrSelector) ReceivedData(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
+	hashes, data := aggr.op.GetData(msg)
+	for i, hash := range hashes {
+		lists := aggr.ds.Add(hash, data[i], msg.Height)
+		for _, list := range lists {
+			aggr.op.OnListFulfilled(list, ctx.ExecCtx)
 		}
-	case aggr.listMsg:
-		list := aggr.op.GetList(msg)
-		data := aggr.ds.Get(list, msg.Height)
-		if data != nil {
-			aggr.op.OnListFulfilled(data, aggr.MsgBroker)
-		}
-	case aggr.clearMsg:
-		aggr.ds.Clear(msg.Height)
-		// default:
-		// 	panic(fmt.Sprintf("unexpected message type: %v", msg.Name))
 	}
+	return nil
+}
+func (aggr *AggrSelector) ReceivedList(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
+	list := aggr.op.GetList(msg)
+	data := aggr.ds.Get(list, msg.Height)
+	if data != nil {
+		aggr.op.OnListFulfilled(data, ctx.ExecCtx)
+	}
+	return nil
+}
+func (aggr *AggrSelector) ReceivedClearCommand(ctx *actor.ActionContext) error {
+	aggr.ds.Clear(ctx.Messages[0].Height)
 	return nil
 }

@@ -47,9 +47,7 @@ const (
 	MsgBlockCompleted             = "blockCompleted"
 	MsgReceiptInfo                = "receiptinfo"
 	MsgAcctHash                   = "accthash"
-	// MsgGasUsed                    = "gasused"
-	// MsgBloom                      = "bloom"
-	// MsgTpsGasBurned              = "tpsGasBurned"
+
 	MsgParentInfo                  = "parentinfo"
 	MsgLocalParentInfo             = "localparentinfo"
 	MsgCheckedTxs                  = "checkedTxs" // common-lib/types.*IncomingTxs

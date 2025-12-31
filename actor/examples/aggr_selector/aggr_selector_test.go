@@ -23,66 +23,41 @@ import (
 
 	"github.com/arcology-network/streamer/actor"
 	brokerpk "github.com/arcology-network/streamer/broker"
-	"github.com/arcology-network/streamer/log"
+	scommon "github.com/arcology-network/streamer/common"
 )
 
 func TestAggrSelector(t *testing.T) {
-	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
+	// log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
 
 	broker := brokerpk.NewStatefulStreamer()
-	aggrSelectorBase := &actor.HeightController{}
-	aggrSelectorBase.Next(&actor.FSMController{}).Next(actor.MakeLinkable(NewDataPreprocessor())).EndWith(NewAggrSelector())
-	aggrSelectorActor := actor.NewActor(
-		"aggrselector",
-		broker,
-		[]string{
-			msgData,
-			msgList,
-			msgClear,
-		},
-		[]string{},
-		[]int{},
-		aggrSelectorBase,
-	)
-	aggrSelectorActor.Connect(brokerpk.NewDisjunctions(aggrSelectorActor, 1))
-
-	sender := brokerpk.NewDefaultProducer(
-		"sender",
-		[]string{
-			msgData,
-			msgList,
-			msgClear,
-		},
-		[]int{1, 1, 1},
-	)
-	broker.RegisterProducer(sender)
+	dataProcessor := NewDataPreprocessor()
+	aggr := NewAggrSelector()
+	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, []*actor.Filter{}, 8)
 
 	broker.Serve()
 
-	aggrSelectorBase.OnStart()
-
-	broker.Send(msgData, &actor.Message{
+	broker.Send(msgData, &scommon.Message{
 		Name: msgData,
 		Data: "item1",
 	})
-	broker.Send(msgClear, &actor.Message{
+	broker.Send(msgClear, &scommon.Message{
 		Name: msgClear,
 	})
-	broker.Send(msgList, &actor.Message{
+	broker.Send(msgList, &scommon.Message{
 		Name: msgList,
 		Data: []string{"item1", "item2"},
 	})
-	broker.Send(msgData, &actor.Message{
+	broker.Send(msgData, &scommon.Message{
 		Name:   msgData,
 		Data:   "item2",
 		Height: 1,
 	})
-	broker.Send(msgData, &actor.Message{
+	broker.Send(msgData, &scommon.Message{
 		Name:   msgData,
 		Data:   "item2",
 		Height: 2,
 	})
-	broker.Send(msgData, &actor.Message{
+	broker.Send(msgData, &scommon.Message{
 		Name: msgData,
 		Data: "item2",
 	})
@@ -90,124 +65,71 @@ func TestAggrSelector(t *testing.T) {
 }
 
 func TestAggrSelector2(t *testing.T) {
-	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
 
 	broker := brokerpk.NewStatefulStreamer()
-	aggrSelectorBase := &actor.HeightController{}
-	aggrSelectorBase.Next(&actor.FSMController{}).Next(actor.MakeLinkable(NewDataPreprocessor())).EndWith(NewAggrSelector())
-	aggrSelectorActor := actor.NewActor(
-		"aggrselector",
-		broker,
-		[]string{
-			msgData,
-			msgList,
-			msgClear,
-		},
-		[]string{},
-		[]int{},
-		aggrSelectorBase,
-	)
-	aggrSelectorActor.Connect(brokerpk.NewDisjunctions(aggrSelectorActor, 1))
-
-	sender := brokerpk.NewDefaultProducer(
-		"sender",
-		[]string{
-			msgData,
-			msgList,
-			msgClear,
-		},
-		[]int{1, 1, 1},
-	)
-	broker.RegisterProducer(sender)
+	dataProcessor := NewDataPreprocessor()
+	aggr := NewAggrSelector()
+	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, []*actor.Filter{}, 8)
 
 	broker.Serve()
 
-	aggrSelectorBase.OnStart()
-
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "item1", Height: 0})
-	broker.Send(msgList, &actor.Message{Name: msgList, Data: []string{"item1", "item2"}, Height: 0})
-	broker.Send(msgClear, &actor.Message{Name: msgClear, Height: 0})
-	broker.Send(msgClear, &actor.Message{Name: msgClear, Height: 1})
-	broker.Send(msgClear, &actor.Message{Name: msgClear, Height: 2})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "item1", Height: 0})
+	broker.Send(msgList, &scommon.Message{Name: msgList, Data: []string{"item1", "item2"}, Height: 0})
+	broker.Send(msgClear, &scommon.Message{Name: msgClear, Height: 0})
+	broker.Send(msgClear, &scommon.Message{Name: msgClear, Height: 1})
+	broker.Send(msgClear, &scommon.Message{Name: msgClear, Height: 2})
 	time.Sleep(time.Second)
-	broker.Send(msgList, &actor.Message{Name: msgList, Data: []string{"item3", "item4"}, Height: 1})
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "item2", Height: 0})
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "item3", Height: 1})
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "item4", Height: 1})
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "garbage", Height: 1})
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "garbage", Height: 2})
+	broker.Send(msgList, &scommon.Message{Name: msgList, Data: []string{"item3", "item4"}, Height: 1})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "item2", Height: 0})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "item3", Height: 1})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "item4", Height: 1})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "garbage", Height: 1})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "garbage", Height: 2})
 	time.Sleep(time.Second)
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "item5", Height: 2})
-	broker.Send(msgData, &actor.Message{Name: msgData, Data: "item6", Height: 2})
-	broker.Send(msgData, &actor.Message{Name: msgList, Data: []string{"item5", "item6"}, Height: 2})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "item5", Height: 2})
+	broker.Send(msgData, &scommon.Message{Name: msgData, Data: "item6", Height: 2})
+	broker.Send(msgData, &scommon.Message{Name: msgList, Data: []string{"item5", "item6"}, Height: 2})
 	time.Sleep(time.Second * 3)
 }
 
 func TestAggrSelectorWithMsgCleaner(t *testing.T) {
-	log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
-
 	broker := brokerpk.NewStatefulStreamer()
-	aggrSelectorBase := actor.NewMsgCleaner(func(msg *actor.Message) bool {
-		return msg.Name != msgData || msg.From != "sender"
-	})
-	aggrSelectorBase.Next(&actor.HeightController{}).Next(&actor.FSMController{}).EndWith(NewAggrSelector())
-	aggrSelectorActor := actor.NewActor(
-		"aggrselector",
-		broker,
-		[]string{
-			msgData,
-			msgList,
-			msgClear,
-		},
-		[]string{},
-		[]int{},
-		aggrSelectorBase,
-	)
-	aggrSelectorActor.Connect(brokerpk.NewDisjunctions(aggrSelectorActor, 1))
+	dataProcessor := NewDataPreprocessor()
+	aggr := NewAggrSelector()
+	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, []*actor.Filter{}, 8)
 
-	dataPreprocessorBase := actor.NewMsgCleaner(actor.OnlyFrom("sender"))
-	dataPreprocessorBase.EndWith(NewDataPreprocessorV2())
-	dataPreprocessorActor := actor.NewActor(
-		"datapreprocessor",
-		broker,
-		[]string{msgData},
-		[]string{msgData},
-		[]int{1},
-		dataPreprocessorBase,
-	)
-	dataPreprocessorActor.Connect(brokerpk.NewDisjunctions(dataPreprocessorActor, 1))
-
-	sender := brokerpk.NewDefaultProducer(
-		"sender",
-		[]string{
-			msgData,
-			msgList,
-			msgClear,
+	filter := actor.NewOriginFilter(
+		"origin-filter",
+		func(msg *scommon.Message) bool {
+			return msg.Name != msgData || msg.From != "sender"
 		},
-		[]int{1, 1, 1},
 	)
-	broker.RegisterProducer(sender)
+	actor.CreateActor("aggrselector", broker, []actor.Business{aggr}, []string{"aggr"}, []*actor.Filter{filter}, 8)
+
+	dataProcessor2 := NewDataPreprocessorV2()
+	filter1 := actor.NewOriginFilter(
+		"origin-filter1",
+		actor.OnlyFrom("sender"),
+	)
+	actor.CreateActor("datapreprocessor", broker, []actor.Business{dataProcessor2}, []string{"dataProcessor2"}, []*actor.Filter{filter1}, 8)
 
 	broker.Serve()
 
-	aggrSelectorBase.OnStart()
-	dataPreprocessorBase.OnStart()
-
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "item1", Height: 0})
-	broker.Send(msgList, &actor.Message{From: "sender", Name: msgList, Data: []string{"item1", "item2"}, Height: 0})
-	broker.Send(msgClear, &actor.Message{From: "sender", Name: msgClear, Height: 0})
-	broker.Send(msgClear, &actor.Message{From: "sender", Name: msgClear, Height: 1})
-	broker.Send(msgClear, &actor.Message{From: "sender", Name: msgClear, Height: 2})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "item1", Height: 0})
+	broker.Send(msgList, &scommon.Message{From: "sender", Name: msgList, Data: []string{"item1", "item2"}, Height: 0})
+	broker.Send(msgClear, &scommon.Message{From: "sender", Name: msgClear, Height: 0})
+	broker.Send(msgClear, &scommon.Message{From: "sender", Name: msgClear, Height: 1})
+	broker.Send(msgClear, &scommon.Message{From: "sender", Name: msgClear, Height: 2})
 	time.Sleep(time.Second)
-	broker.Send(msgList, &actor.Message{From: "sender", Name: msgList, Data: []string{"item3", "item4"}, Height: 1})
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "item2", Height: 0})
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "item3", Height: 1})
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "item4", Height: 1})
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "garbage", Height: 1})
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "garbage", Height: 2})
+	broker.Send(msgList, &scommon.Message{From: "sender", Name: msgList, Data: []string{"item3", "item4"}, Height: 1})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "item2", Height: 0})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "item3", Height: 1})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "item4", Height: 1})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "garbage", Height: 1})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "garbage", Height: 2})
 	time.Sleep(time.Second)
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "item5", Height: 2})
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgData, Data: "item6", Height: 2})
-	broker.Send(msgData, &actor.Message{From: "sender", Name: msgList, Data: []string{"item5", "item6"}, Height: 2})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "item5", Height: 2})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "item6", Height: 2})
+	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgList, Data: []string{"item5", "item6"}, Height: 2})
 	time.Sleep(time.Second * 3)
 }

@@ -1,25 +1,9 @@
-/*
- *   Copyright (c) 2024 Arcology Network
-
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
-
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
-
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package actor
 
 import (
 	"fmt"
-	"reflect"
+
+	scommon "github.com/arcology-network/streamer/common"
 )
 
 type HeightSensitive interface {
@@ -27,52 +11,32 @@ type HeightSensitive interface {
 }
 
 type HeightController struct {
-	BaseLinkedActor
-
 	client HeightSensitive
 	buf    *MsgBuffer
 }
 
-func NewHeightController() *HeightController {
-	controller := &HeightController{}
-	controller.BaseLinkedActor.SetDerived(controller)
-	return controller
+func NewHeightController(client HeightSensitive) *HeightController {
+	return &HeightController{
+		client: client,
+		buf:    NewMsgBuffer(),
+	}
 }
 
-func (ctrl *HeightController) Preprocess(msgs []*Message) ([]*Message, error) {
-	if len(msgs) != 1 {
-		panic("cannot handle more than one message.")
+func (c *HeightController) OnMessage(msg *scommon.Message) ([]*scommon.Message, error) {
+	if msg.Height <= c.client.Height() {
+		return []*scommon.Message{msg}, nil
 	}
-	msg := msgs[0]
 
-	if msg.Height <= ctrl.client.Height() {
-		return msgs, nil
-	} else {
-		ctrl.buf.Put(msg)
-		fmt.Printf("HC: Push %v\n", msg)
-	}
+	c.buf.Put(msg)
+	fmt.Printf("HC: Push name=%s height=%d\n", msg.Name, msg.Height)
 	return nil, nil
 }
 
-func (ctrl *HeightController) Postprocess(msgs []*Message) error {
-	msg := ctrl.buf.Get(ctrl.client.Height())
-	if msg != nil {
-		fmt.Printf("HC: Pop %v\n", msg)
-		ctrl.ChangeEnvironment(msg)
-		ctrl.OnMessageArrived([]*Message{msg})
+// Attempt to release messages in the cache that meet the height requirement
+func (c *HeightController) OnAfterExecute() ([]*scommon.Message, error) {
+	if msg := c.buf.PopByHeight(c.client.Height()); msg != nil {
+		fmt.Printf("HC: Pop name=%s height=%d\n", msg.Name, msg.Height)
+		return []*scommon.Message{msg}, nil
 	}
-	return nil
-}
-
-func (ctrl *HeightController) OnStart() {
-	ctrl.BaseLinkedActor.SetDerived(ctrl)
-	client := ctrl.GetClient(reflect.TypeOf((*HeightSensitive)(nil)).Elem())
-	if client == nil {
-		panic("no height sensitive consumers found.")
-	}
-	ctrl.client = client.(HeightSensitive)
-	ctrl.buf = NewMsgBuffer(func(msg *Message, args ...interface{}) bool {
-		return msg.Height <= args[0].(uint64)
-	})
-	ctrl.BaseLinkedActor.OnStart()
+	return nil, nil
 }

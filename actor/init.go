@@ -23,6 +23,6 @@ var Factory WorkerFactory
 
 func init() {
 	Factory.registry = make(map[string]WorkerCreator)
-	Factory.Register("cleaner", NewCleaner)
+	// Factory.Register("cleaner", NewCleaner)
 	gob.Register(&BlockStart{})
 }

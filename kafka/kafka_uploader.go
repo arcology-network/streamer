@@ -25,21 +25,23 @@ import (
 )
 
 type KafkaUploader struct {
-	actor.WorkerThread
+	Name      string
 	outgoing  *lib.ComOutgoing
 	relations map[string]string
 	mqaddr    string
 }
 
 // return a Subscriber struct
-func NewKafkaUploader(concurrency int, groupid string, relations map[string]string, mqaddr string) actor.IWorkerEx {
+func NewKafkaUploader(relations map[string]string, mqaddr string, name string) *KafkaUploader {
 	uploader := KafkaUploader{}
-	uploader.Set(concurrency, groupid)
 	uploader.relations = relations
 	uploader.mqaddr = mqaddr
+	uploader.Name = name
 	return &uploader
 }
-
+func (ku *KafkaUploader) RpcConfig() (string, int) {
+	return "", 0
+}
 func (ku *KafkaUploader) Inputs() ([]string, bool) {
 	var inputs []string
 	for input := range ku.relations {

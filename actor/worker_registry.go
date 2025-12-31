@@ -19,7 +19,7 @@ package actor
 
 import "fmt"
 
-type WorkerCreator func(concurrency int, groupId string) IWorkerEx
+type WorkerCreator func() Business
 
 type Configurable interface {
 	Config(params map[string]interface{})
@@ -33,11 +33,11 @@ func (factory *WorkerFactory) Register(name string, creator WorkerCreator) {
 	factory.registry[name] = creator
 }
 
-func (factory *WorkerFactory) Create(name string, concurrency int, groupId string, params map[string]interface{}) IWorkerEx {
+func (factory *WorkerFactory) Create(name string, concurrency int, groupId string, params map[string]interface{}) Business {
 	if creator, ok := factory.registry[name]; !ok {
 		panic("worker name not found: " + name)
 	} else {
-		worker := creator(concurrency, groupId)
+		worker := creator()
 		if len(params) == 0 {
 			return worker
 		}
@@ -57,7 +57,7 @@ func (factory *WorkerFactory) Registry() map[string]WorkerCreator {
 
 func (factory *WorkerFactory) Print() {
 	for name, creator := range factory.registry {
-		worker := creator(1, "printer")
+		worker := creator()
 		fmt.Printf("%v { ", name)
 		if _, ok := worker.(FSMCompatible); ok {
 			fmt.Print("FSMCompatible ")

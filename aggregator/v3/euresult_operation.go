@@ -21,6 +21,7 @@ import (
 	types "github.com/arcology-network/common-lib/types"
 	eushared "github.com/arcology-network/eu/shared"
 	"github.com/arcology-network/streamer/actor"
+	scommon "github.com/arcology-network/streamer/common"
 	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
@@ -28,7 +29,7 @@ type EuResultOperation struct {
 	output string
 }
 
-func (op *EuResultOperation) GetData(msg *actor.Message) (hashes []evmCommon.Hash, data []interface{}) {
+func (op *EuResultOperation) GetData(msg *scommon.Message) (hashes []evmCommon.Hash, data []interface{}) {
 	results := msg.Data.(*eushared.Euresults)
 	if results == nil {
 		return
@@ -41,7 +42,7 @@ func (op *EuResultOperation) GetData(msg *actor.Message) (hashes []evmCommon.Has
 	return
 }
 
-func (op *EuResultOperation) GetList(msg *actor.Message) (hashes []evmCommon.Hash) {
+func (op *EuResultOperation) GetList(msg *scommon.Message) (hashes []evmCommon.Hash) {
 	list := msg.Data.(*types.InclusiveList)
 	for i, hash := range list.HashList {
 		if list.Successful[i] {
@@ -51,7 +52,7 @@ func (op *EuResultOperation) GetList(msg *actor.Message) (hashes []evmCommon.Has
 	return
 }
 
-func (op *EuResultOperation) OnListFulfilled(data []interface{}, broker *actor.MessageWrapper) {
+func (op *EuResultOperation) OnListFulfilled(data []interface{}, broker *actor.ExecutionContext) {
 	broker.Send(op.output, data)
 }
 

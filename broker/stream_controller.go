@@ -25,8 +25,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type ActorEvent interface{}
+
 type Actor interface {
-	Consume(data interface{})
+	Consume(data ActorEvent)
 }
 
 type StreamController interface {
@@ -275,7 +277,7 @@ func NewShortCircuitActor(consumer StreamConsumer, name string) *ShortCircuitAct
 	}
 }
 
-func (scw *ShortCircuitActor) Consume(data interface{}) {
+func (scw *ShortCircuitActor) Consume(data ActorEvent) {
 	scw.in <- data
 }
 

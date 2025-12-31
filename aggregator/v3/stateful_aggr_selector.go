@@ -18,11 +18,13 @@
 package aggregator
 
 import (
+	"context"
 	"fmt"
 	"math"
 
 	"github.com/arcology-network/streamer/actor"
-	"github.com/arcology-network/streamer/log"
+	scommon "github.com/arcology-network/streamer/common"
+	"github.com/arcology-network/streamer/logger"
 )
 
 const (
@@ -32,8 +34,6 @@ const (
 )
 
 type StatefulAggrSelector struct {
-	actor.WorkerThread
-
 	dataMsg  string
 	listMsg  string
 	clearMsg string
@@ -41,9 +41,10 @@ type StatefulAggrSelector struct {
 	op       AggrOperation
 	state    int
 	height   uint64
+	name     string
 }
 
-func NewStatefulAggrSelector(concurrency int, groupId string, dataMsg string, listMsg string, clearMsg string, op AggrOperation) actor.IWorkerEx {
+func NewStatefulAggrSelector(name string, dataMsg string, listMsg string, clearMsg string, op AggrOperation) *StatefulAggrSelector {
 	aggr := &StatefulAggrSelector{
 		dataMsg:  dataMsg,
 		listMsg:  listMsg,
@@ -51,8 +52,8 @@ func NewStatefulAggrSelector(concurrency int, groupId string, dataMsg string, li
 		ds:       NewDataSet(),
 		op:       op,
 		state:    aggrStateInit,
+		name:     name,
 	}
-	aggr.Set(concurrency, groupId)
 	return aggr
 }
 
@@ -68,43 +69,43 @@ func (aggr *StatefulAggrSelector) Config(params map[string]interface{}) {
 	aggr.op.Config(params)
 }
 
-func (aggr *StatefulAggrSelector) OnStart() {}
-
-func (aggr *StatefulAggrSelector) OnMessageArrived(msgs []*actor.Message) error {
-	msg := msgs[0]
+func (aggr *StatefulAggrSelector) RegisterActions(reg actor.ActionRegistrar) {
+	reg.Register(aggr.dataMsg, aggr.ReceivedData)
+	reg.Register(aggr.listMsg, aggr.ReceivedList)
+	reg.Register(aggr.clearMsg, aggr.ReceivedClearCommand)
+}
+func (aggr *StatefulAggrSelector) ReceivedData(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
 	switch aggr.state {
 	case aggrStateInit:
-		if msg.Name == aggr.dataMsg {
-			aggr.onDataReceived(msg)
-		} else if msg.Name == aggr.listMsg {
-			if aggr.onListReceived(msg) {
-				aggr.state = aggrStateDone
-				aggr.AddLog(log.LogLevel_Info, "[StatefulAggrSelector] list received, switch to aggrStateDone")
-			} else {
-				aggr.state = aggrStateCollecting
-				aggr.AddLog(log.LogLevel_Info, "[StatefulAggrSelector] list received, switch to aggrStateCollecting")
-			}
-		}
+		aggr.onDataReceived(msg, ctx.ExecCtx)
 	case aggrStateCollecting:
-		if msg.Name == aggr.dataMsg {
-			if aggr.onDataReceived(msg) {
-				aggr.state = aggrStateDone
-				aggr.AddLog(log.LogLevel_Info, "[StatefulAggrSelector] data received, switch to aggrStateDone")
-			}
+		if aggr.onDataReceived(msg, ctx.ExecCtx) {
+			aggr.state = aggrStateDone
+			logger.Log.Debug(context.Background(), "[StatefulAggrSelector] data received, switch to aggrStateDone")
 		}
-	case aggrStateDone:
-		if msg.Name == aggr.clearMsg {
-			aggr.ds.Clear(msg.Height)
-			aggr.state = aggrStateInit
-			aggr.height = msg.Height + 1
-			aggr.AddLog(log.LogLevel_Info, fmt.Sprintf("[StatefulAggrSelector] clear on height %d", msg.Height))
-		}
-		// } else {
-		// 	// FIXME
-		// 	// MsgInitDB walk throught aggr selector, height inited before first MsgBlockCompleted by mistake.
-		// 	aggr.height = 0
-		// }
 	}
+	return nil
+}
+
+func (aggr *StatefulAggrSelector) ReceivedList(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
+	if aggr.onListReceived(msg, ctx.ExecCtx) {
+		aggr.state = aggrStateDone
+		logger.Log.Debug(context.Background(), "[StatefulAggrSelector] list received, switch to aggrStateDone")
+	} else {
+		aggr.state = aggrStateCollecting
+		logger.Log.Debug(context.Background(), "[StatefulAggrSelector] list received, switch to aggrStateCollecting")
+	}
+	return nil
+}
+
+func (aggr *StatefulAggrSelector) ReceivedClearCommand(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
+	aggr.ds.Clear(msg.Height)
+	aggr.state = aggrStateInit
+	aggr.height = msg.Height + 1
+	logger.Log.Debug(context.Background(), fmt.Sprintf("[StatefulAggrSelector] clear on height %d", msg.Height))
 	return nil
 }
 
@@ -122,37 +123,28 @@ func (aggr *StatefulAggrSelector) GetCurrentState() int {
 
 func (aggr *StatefulAggrSelector) Height() uint64 {
 	if aggr.height == 0 {
-		// var na int
-		// var state state.State
-		// if err := intf.Router.Call("tmstatestore", "Load", &na, &state); err != nil {
-		// 	panic(err)
-		// }
-		// aggr.height = uint64(state.LastBlockHeight + 1)
-		// fmt.Printf("[StatefulAggrSelector.Height] Init height to %d\n", aggr.height)
-
-		// Before first MsgBlockCompleted, we accept all the messages.
 		return math.MaxUint64
 	}
 	return aggr.height
 }
 
-func (aggr *StatefulAggrSelector) onDataReceived(msg *actor.Message) (fulfilled bool) {
+func (aggr *StatefulAggrSelector) onDataReceived(msg *scommon.Message, ctx *actor.ExecutionContext) (fulfilled bool) {
 	hashes, data := aggr.op.GetData(msg)
 	for i, hash := range hashes {
 		lists := aggr.ds.Add(hash, data[i], msg.Height)
 		for _, list := range lists {
 			fulfilled = true
-			aggr.op.OnListFulfilled(list, aggr.MsgBroker)
+			aggr.op.OnListFulfilled(list, ctx)
 		}
 	}
 	return
 }
 
-func (aggr *StatefulAggrSelector) onListReceived(msg *actor.Message) bool {
+func (aggr *StatefulAggrSelector) onListReceived(msg *scommon.Message, ctx *actor.ExecutionContext) bool {
 	list := aggr.op.GetList(msg)
 	data := aggr.ds.Get(list, msg.Height)
 	if data != nil {
-		aggr.op.OnListFulfilled(data, aggr.MsgBroker)
+		aggr.op.OnListFulfilled(data, ctx)
 		return true
 	}
 	return false

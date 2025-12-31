@@ -6,13 +6,13 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.29.0
 
 replace github.com/ethereum/go-ethereum v1.14.8 => github.com/arcology-network/concurrent-evm v0.0.0-20250714082425-8009ff40403f
 
-// replace github.com/arcology-network/common-lib => ../common-lib/
+replace github.com/arcology-network/common-lib => ../common-lib/
 
 // replace github.com/arcology-network/consensus-engine => ../consensus-engine/
 
-// replace github.com/arcology-network/storage-committer => ../storage-committer/
+replace github.com/arcology-network/storage-committer => ../storage-committer/
 
-// replace github.com/arcology-network/eu => ../eu
+replace github.com/arcology-network/eu => ../eu
 
 require (
 	github.com/BurntSushi/toml v1.2.1
@@ -29,12 +29,20 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-require github.com/ethereum/go-ethereum v1.14.8
+require (
+	github.com/arcology-network/common-lib v0.0.0-00010101000000-000000000000
+	github.com/arcology-network/eu v0.0.0-00010101000000-000000000000
+	github.com/ethereum/go-ethereum v1.14.8
+)
+
+// github.com/arcology-network/common-lib v1.9.1-0.20251112075051-e3046bddd333
+require github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845
 
 require (
-	github.com/arcology-network/common-lib v1.9.1-0.20251112075051-e3046bddd333
-	github.com/arcology-network/consensus-engine v1.9.1-0.20240526090943-17da73f27845
-	github.com/arcology-network/eu v0.0.0-20251114133829-738e3fdeabb8
+	github.com/arcology-network/storage-committer v0.0.0-00010101000000-000000000000 // indirect
+	github.com/nats-io/nkeys v0.4.7 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 )
 
 require (
@@ -48,7 +56,7 @@ require (
 	github.com/anacrolix/sync v0.2.0 // indirect
 	github.com/anacrolix/utp v0.0.0-20180219060659-9e0e1d1d0572 // indirect
 	github.com/apache/thrift v0.13.0 // indirect
-	github.com/arcology-network/storage-committer v1.9.1-0.20251112080202-1f75b95ce882 // indirect
+	// github.com/arcology-network/storage-committer v1.9.1-0.20251112080202-1f75b95ce882 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
@@ -95,7 +103,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/grandcat/zeroconf v1.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4 // indirect
@@ -141,6 +149,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nacos-group/nacos-sdk-go v0.0.0-20191128082542-fe1b325b125c // indirect
+	github.com/nats-io/nats.go v1.36.0
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
@@ -164,7 +173,6 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/supranational/blst v0.3.11 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
@@ -199,9 +207,9 @@ require (
 	gopkg.in/jcmturner/dnsutils.v1 v1.0.1 // indirect
 	gopkg.in/jcmturner/gokrb5.v7 v7.2.3 // indirect
 	gopkg.in/jcmturner/rpc.v1 v1.1.0 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/redis.v5 v5.2.9 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	rsc.io/tmplfunc v0.0.3 // indirect
 )

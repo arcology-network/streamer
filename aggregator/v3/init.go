@@ -22,40 +22,36 @@ import (
 )
 
 func init() {
-	actor.Factory.Register("stateless_euresult_aggr_selector", func(concurrency int, groupId string) actor.IWorkerEx {
+	actor.Factory.Register("stateless_euresult_aggr_selector", func() actor.Business {
 		return NewAggrSelector(
-			concurrency,
-			groupId,
+			"stateless_euresult_aggr_selector",
 			actor.MsgEuResults,
 			actor.MsgGenerationReapingList,
 			actor.MsgBlockEnd,
 			&EuResultOperation{},
 		)
 	})
-	actor.Factory.Register("stateful_euresult_aggr_selector", func(concurrency int, groupId string) actor.IWorkerEx {
+	actor.Factory.Register("stateful_euresult_aggr_selector", func() actor.Business {
 		return NewStatefulAggrSelector(
-			concurrency,
-			groupId,
+			"stateful_euresult_aggr_selector",
 			actor.MsgEuResults,
 			actor.MsgGenerationReapingList,
 			actor.MsgBlockEnd,
 			&EuResultOperation{},
 		)
 	})
-	actor.Factory.Register("stateful_receipt_aggr_selector", func(concurrency int, groupId string) actor.IWorkerEx {
+	actor.Factory.Register("stateful_receipt_aggr_selector", func() actor.Business {
 		return NewStatefulAggrSelector(
-			concurrency,
-			groupId,
+			"stateful_receipt_aggr_selector",
 			actor.MsgReceipts,
 			actor.MsgInclusive,
 			actor.MsgBlockCompleted,
 			&ReceiptOperation{},
 		)
 	})
-	actor.Factory.Register("stateful_receipt_hash_aggr_selector", func(concurrency int, groupId string) actor.IWorkerEx {
+	actor.Factory.Register("stateful_receipt_hash_aggr_selector", func() actor.Business {
 		return NewStatefulAggrSelector(
-			concurrency,
-			groupId,
+			"stateful_receipt_hash_aggr_selector",
 			actor.MsgReceiptHashList,
 			actor.MsgInclusive,
 			actor.MsgBlockCompleted,

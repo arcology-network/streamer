@@ -26,16 +26,16 @@ import (
 )
 
 type KafkaUploader struct {
-	actor.WorkerThread
 	outgoing  *lib.ComOutgoing
 	relations map[string]string
+	Name      string
 }
 
 // return a Subscriber struct
-func NewKafkaUploader(concurrency int, groupid string, relations map[string]string) *KafkaUploader {
+func NewKafkaUploader(name string, relations map[string]string) *KafkaUploader {
 	uploader := KafkaUploader{}
-	uploader.Set(concurrency, groupid)
 	uploader.relations = relations
+	uploader.Name = name
 	return &uploader
 }
 

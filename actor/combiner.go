@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	brokerpk "github.com/arcology-network/streamer/broker"
+	scommon "github.com/arcology-network/streamer/common"
 )
 
 const (
@@ -34,10 +35,10 @@ func CombinedName(inputs ...string) string {
 }
 
 type CombinerElements struct {
-	Msgs map[string]*Message
+	Msgs map[string]*scommon.Message
 }
 
-func (cl *CombinerElements) Get(msgname string) *Message {
+func (cl *CombinerElements) Get(msgname string) *scommon.Message {
 	if msg, ok := cl.Msgs[msgname]; ok {
 		return msg
 	} else {
@@ -46,7 +47,6 @@ func (cl *CombinerElements) Get(msgname string) *Message {
 }
 
 type Combiner struct {
-	WorkerThread
 	inputs []string
 	outMsg string
 	els    *CombinerElements
@@ -57,21 +57,25 @@ func Combine(inputs ...string) *Combiner {
 		inputs: inputs,
 		outMsg: CombinedName(inputs...),
 		els: &CombinerElements{
-			Msgs: map[string]*Message{},
+			Msgs: map[string]*scommon.Message{},
 		},
 	}
 }
 
 func (c *Combiner) On(broker *brokerpk.StatefulStreamer) *Combiner {
-	combiner := NewActorEx(
+	CreateActor(
 		c.outMsg,
 		broker,
-		c,
+		[]Business{c},
+		[]string{"combiner"},
+		[]*Filter{},
+		2,
 	)
-	combiner.Connect(brokerpk.NewConjunctions(combiner))
 	return c
 }
-
+func (w *Combiner) RpcConfig() (string, int) {
+	return "", 0
+}
 func (c *Combiner) Inputs() ([]string, bool) {
 	return c.inputs, true
 }
@@ -82,20 +86,23 @@ func (c *Combiner) Outputs() map[string]int {
 	}
 }
 
-func (c *Combiner) OnStart() {
-}
-
-func (c *Combiner) Stop() {
+func (c *Combiner) Config(params map[string]interface{}) {
 
 }
 
-func (c *Combiner) OnMessageArrived(msgs []*Message) error {
-	for _, v := range msgs {
+func (c *Combiner) RegisterActions(reg ActionRegistrar) {
+	for i := range c.inputs {
+		reg.Register(c.inputs[i], c.combine)
+	}
+}
+
+func (c *Combiner) combine(ctx *ActionContext) error {
+	for _, v := range ctx.Messages {
 		c.els.Msgs[v.Name] = v
 	}
-	c.MsgBroker.Send(c.outMsg, c.els)
+	ctx.ExecCtx.Send(c.outMsg, c.els)
 	c.els = &CombinerElements{
-		Msgs: map[string]*Message{},
+		Msgs: map[string]*scommon.Message{},
 	}
 	return nil
 }

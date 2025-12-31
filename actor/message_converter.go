@@ -18,171 +18,328 @@
 package actor
 
 import (
+	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/arcology-network/streamer/actor/rpc"
+	"github.com/arcology-network/streamer/broker"
 	brokerpk "github.com/arcology-network/streamer/broker"
-	"github.com/arcology-network/streamer/log"
+	scommon "github.com/arcology-network/streamer/common"
+	"github.com/arcology-network/streamer/logger"
 )
 
 type Actor struct {
-	receiver chan interface{}
+	name   string
+	broker *brokerpk.StatefulStreamer
 
-	Producer    brokerpk.StreamProducer
-	name        string
-	subscribeTo []string
-	workerThd   IWorker
-	broker      *brokerpk.StatefulStreamer
+	chain            *BusinessChain
+	execCtx          *ExecutionContext
+	rpcIndex         map[string]*ControlledNode
+	rpcCompleteTopic string
+
+	inbox chan brokerpk.ActorEvent
+
+	continuations *ContinuationManager
 }
 
-func NewActor(name string, broker *brokerpk.StatefulStreamer, subscribeTo []string, publishTo []string, bufferLen []int, workerThd IWorker) *Actor {
+func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Business, businessNames []string, filters []*Filter, concurrency int) *Actor {
+	rpccomplete := name + ".rpc.complete"
 	actor := &Actor{
-		receiver:    make(chan interface{}),
-		name:        name,
-		subscribeTo: subscribeTo,
-		broker:      broker,
-	}
-	if publishTo != nil || len(publishTo) > 0 {
-		actor.Producer = brokerpk.NewDefaultProducer(name+"-producer", publishTo, bufferLen)
+		inbox:            make(chan brokerpk.ActorEvent, 1024),
+		name:             name,
+		broker:           broker,
+		execCtx:          NewExecutionContext(name, rpccomplete, broker, concurrency),
+		rpcIndex:         make(map[string]*ControlledNode, len(businesses)),
+		rpcCompleteTopic: rpccomplete,
+
+		continuations: NewContinuationManager(),
 	}
 
-	actor.SetWorker(workerThd)
-	workerThd.Init(name, broker)
-	// workerThd.OnStart()
+	//create chain
+	list_inputs := make([][]string, 0, len(businesses))
+	list_outputs := make([]map[string]int, len(businesses))
+	nodes := make([]*ControlledNode, 0, len(businesses))
+	chainIsConjunction := false
+	withRpcServer := false
+	for i := range businesses {
+		//create businesschain
+		inputs, isConjunction := businesses[i].Inputs()
+		list_inputs = append(list_inputs, inputs)
+		list_outputs = append(list_outputs, businesses[i].Outputs())
 
-	for _, subscribe := range subscribeTo {
-		log.Metas.Add(name, "sm_"+subscribe, false)
+		if isConjunction && len(businesses) > 1 {
+			panic("All elements in the pipeline must be DisConjunction.")
+		}
+
+		if i == 0 {
+			chainIsConjunction = isConjunction
+		} else {
+			chainIsConjunction = false
+		}
+
+		// ControlledNodes
+		controllers := make([]Controller, 0, 2)
+		if !isConjunction {
+			if _, ok := businesses[i].(HeightSensitive); ok {
+				controllers = append(controllers, NewHeightController(businesses[i].(HeightSensitive)))
+			}
+			if _, ok := businesses[i].(FSMCompatible); ok {
+				controllers = append(controllers, NewFSMController(businesses[i].(FSMCompatible)))
+			}
+		}
+		node := NewControlledNode(businesses[i], controllers, businessNames[i], i)
+		nodes = append(nodes, node)
+
+		//rpc server
+		if _, ok := businesses[i].(RpcConfigurable); ok {
+			serviceName, bufferSize := businesses[i].(RpcConfigurable).RpcConfig()
+			serviceName = strings.Trim(serviceName, " ")
+			if len(serviceName) > 0 {
+				rpc.NewRPCService("rpc."+serviceName, actor, broker, bufferSize)
+				// Only checks for duplicate service names.
+				if err := rpc.GlobalRPCFactory.Register("rpc."+serviceName, businesses[i]); err != nil {
+					panic(err)
+				}
+				actor.rpcIndex["rpc."+serviceName] = node
+				withRpcServer = true
+			}
+		}
 	}
-	for _, publish := range publishTo {
-		log.Metas.Add(name, "sm_"+publish, true)
+	actor.chain = NewBusinessChain(nodes, filters)
+
+	//RegisterProducer
+	if list_outputs != nil || len(list_outputs) > 0 {
+		outputs := DeduplicationOutputs(list_outputs)
+		publishTo := make([]string, 0, len(outputs))
+		bufferLen := make([]int, 0, len(outputs))
+		for k, v := range outputs {
+			publishTo = append(publishTo, k)
+			bufferLen = append(bufferLen, v)
+		}
+		if withRpcServer {
+			publishTo = append(publishTo, rpccomplete)
+			bufferLen = append(bufferLen, 1)
+		}
+		actor.broker.RegisterProducer(brokerpk.NewDefaultProducer(name+"-producer", publishTo, bufferLen))
 	}
+
+	//RegisterConsumer
+	inputs := DeduplicationInputs(list_inputs)
+	if withRpcServer {
+		inputs = append(inputs, rpccomplete)
+	}
+	var controller brokerpk.StreamController
+	if chainIsConjunction {
+		controller = brokerpk.NewConjunctions(actor)
+	} else {
+		controller = brokerpk.NewDisjunctions(actor, 1)
+	}
+	actor.broker.RegisterConsumer(brokerpk.NewDefaultConsumer(actor.name+"-consumer", inputs, controller))
+
+	actor.execCtx.actor = actor
 
 	go actor.Serve()
 	return actor
 }
 
-func NewActorEx(name string, broker *brokerpk.StatefulStreamer, worker IWorkerEx) *Actor {
-	var publishTo []string
-	var bufferLen []int
-	for output, bufferSize := range worker.Outputs() {
-		publishTo = append(publishTo, output)
-		bufferLen = append(bufferLen, bufferSize)
-	}
-	inputs, _ := worker.Inputs()
-	return NewActor(name, broker, inputs, publishTo, bufferLen, worker)
+func (a *Actor) RegisterContinuation(id string, c Continuation) {
+	a.continuations.Register(id, c, rpc.RpcTimeout)
 }
 
-func (actor *Actor) Connect(controller brokerpk.StreamController) {
-	if actor.Producer != nil {
-		actor.broker.RegisterProducer(actor.Producer)
-	}
-
-	actor.broker.RegisterConsumer(brokerpk.NewDefaultConsumer(actor.name+"-consumer", actor.subscribeTo, controller))
+func (a *Actor) Consume(evt brokerpk.ActorEvent) {
+	a.inbox <- evt
 }
-
-// SetWorkUint set one uint for work
-func (actor *Actor) SetWorker(worker IWorker) {
-	actor.workerThd = worker
-}
-
-func (actor *Actor) Consume(data interface{}) {
-	actor.receiver <- data
-}
-
-func (actor *Actor) Serve() {
-	for v := range actor.receiver {
-		msgs := []*Message{}
-		switch v.(type) {
-		case []interface{}:
-			params := v.([]interface{})
-			for _, p := range params {
-				actor.parseParams(&msgs, p)
-			}
-		case brokerpk.Aggregated:
-			param := v.(brokerpk.Aggregated)
-			actor.parseParams(&msgs, param.Data)
-		}
-
-		idx := actor.findMaxHeight(&msgs)
-		refid := actor.log(&msgs)
-		lstMessage := msgs[idx].CopyHeader()
-		lstMessage.Msgid = refid
-		actor.workerThd.ChangeEnvironment(lstMessage)
-		actor.workerThd.OnMessageArrived(msgs)
-	}
-
-}
-
-func (actor *Actor) log(msgs *[]*Message) uint64 {
-	workthreadname := actor.name
-	var latestMsg *Message
-	source := ""
-	for _, v := range *msgs {
-		latestMsg = v
-		log.Logger.AddLog(
-			0,
-			log.LogLevel_Info,
-			v.Name,
-			workthreadname,
-			"received msg "+v.Name,
-			"msg",
-			v.Height,
-			v.Round,
-			v.Msgid,
-			0,
-		)
-		source = source + "," + v.Name
-	}
-
-	interRefId := log.Logger.AddLog(
-		0,
-		log.LogLevel_Info,
-		source[1:],
-		workthreadname,
-		fmt.Sprintf("%d messages enter workthread %v", len(*msgs), workthreadname),
-		log.LogType_Act,
-		latestMsg.Height,
-		latestMsg.Round,
-		latestMsg.Msgid,
-		0,
+func (a *Actor) onExit() {
+	a.continuations.CancelAll(
+		fmt.Errorf("actor inbox closed"),
 	)
-	return interRefId
 }
+func (a *Actor) Serve() {
+	defer a.onExit()
 
-func (actor *Actor) findMaxHeight(msgs *[]*Message) int {
-	heightPlus := uint64(0)
-	roundPlus := uint64(0)
-	idx := 0
-	for i, msg := range *msgs {
-		if msg.Height > heightPlus || (msg.Height == heightPlus && msg.Round > roundPlus) {
-			heightPlus = msg.Height
-			roundPlus = msg.Round
-			idx = i
-		}
-	}
-	return idx
-}
+	for evt := range a.inbox {
+		switch e := evt.(type) {
 
-func (actor *Actor) parseParams(msgs *[]*Message, data interface{}) {
-	switch data.(type) {
-	case []interface{}:
-		pparams := data.([]interface{})
-		for _, pp := range pparams {
-			*msgs = append(*msgs, pp.(*Message))
-		}
-	case brokerpk.Aggregated:
-		param := data.(brokerpk.Aggregated)
-		switch param.Data.(type) {
-		case brokerpk.Aggregated:
-			pparam := param.Data.(brokerpk.Aggregated)
+		case *ContinuationNext:
+			a.onContinuationNext(e)
 
-			*msgs = append(*msgs, pparam.Data.(*Message))
+		case *brokerpk.RPCCompletion:
+			a.onCompletion(e)
+
+		case *brokerpk.RPCInvocation:
+			a.onInvocation(e)
+
 		case []interface{}:
-			pparams := param.Data.([]interface{})
-			for _, pp := range pparams {
-				*msgs = append(*msgs, pp.(*Message))
-			}
+			a.onMessage(a.parseParams(e))
+
+		case brokerpk.Aggregated:
+			a.parseAggregated(e)
+
+		default:
+			// unknown event
 		}
-	case *Message:
-		*msgs = append(*msgs, data.(*Message))
 	}
+}
+
+func (a *Actor) onMessage(msgs []*scommon.Message) {
+	a.log(msgs)
+
+	if err := a.chain.OnMessages(msgs, a.execCtx); err != nil {
+		logger.Log.Error(
+			context.Background(),
+			a.name+" execute msg Err",
+			logger.F("err", err),
+		)
+	}
+}
+
+func (a *Actor) ParseStep(step string) (string, *ControlledNode) {
+	spans := strings.Split(step, ".")
+	if len(spans) != 2 {
+		return "", nil
+	}
+	idx, err := strconv.Atoi(spans[0])
+	if err != nil {
+		logger.Log.Error(context.Background(), "ContinuationNext step err", logger.F("step", step))
+		return "", nil
+	}
+	return spans[1], a.chain.GetNode(idx)
+}
+
+func (a *Actor) onContinuationNext(inv *ContinuationNext) {
+	rpcmsg := inv.Payload.(*scommon.Message)
+	// node := a.rpcIndex[rpcmsg.Service]
+
+	step, node := a.ParseStep(inv.Step)
+
+	if node == nil {
+		logger.Log.Error(context.Background(), "rpc request node not found")
+		return
+	}
+
+	rpcCtx := &RPCContext{
+		Request: rpcmsg.Data,
+	}
+
+	ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), rpcmsg)
+	logger.Log.Debug(ctx, a.name+" start rpc Request next")
+
+	if step == "" {
+		logger.Log.Warn(ctx, "rpc continuation without next step")
+		return
+	}
+
+	if inv.Error != "" {
+		node.StartRPC("onRPCError", []*scommon.Message{rpcmsg}, rpcCtx, a.execCtx)
+		return
+	}
+
+	node.StartRPC(
+		step,
+		[]*scommon.Message{rpcmsg},
+		rpcCtx,
+		a.execCtx,
+	)
+}
+
+func (a *Actor) onInvocation(inv *brokerpk.RPCInvocation) {
+	node := a.rpcIndex[inv.ServerName]
+	if node == nil {
+		logger.Log.Error(context.Background(), inv.ServerName+" not configure")
+		return
+	}
+
+	reqID := inv.ID
+
+	rpcmsg := inv.Payload.(*scommon.Message)
+	rpcmsg.ReplyTo = inv.ReplyTo
+
+	ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), rpcmsg)
+	logger.Log.Debug(ctx, a.name+" received rpc Request")
+
+	a.RegisterContinuation(reqID, NewDefaultContinuation(a.broker, a.name, rpcmsg))
+
+	rpcCtx := &RPCContext{
+		Request: rpcmsg.Data,
+	}
+
+	node.StartRPC(
+		inv.Method,
+		[]*scommon.Message{rpcmsg},
+		rpcCtx,
+		a.execCtx,
+	)
+}
+
+func (a *Actor) onCompletion(comp *brokerpk.RPCCompletion) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Log.Error(context.Background(), "panic in continuation", logger.F("id", comp.ID), logger.F("err", r))
+		}
+	}()
+
+	if !a.continuations.Resume(comp.ID, comp) {
+		logger.Log.Warn(
+			context.Background(), "RPCCompletion dropped: no continuation",
+			logger.F("id", comp.ID),
+		)
+	}
+}
+
+func (actor *Actor) log(msgs []*scommon.Message) {
+	for _, v := range msgs {
+		ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), v)
+		logger.Log.Debug(ctx, actor.name+" received Msg")
+	}
+}
+
+func (actor *Actor) parseParams(data []interface{}) []*scommon.Message {
+	msgs := make([]*scommon.Message, len(data))
+	for _, pp := range data {
+		msgs = append(msgs, pp.(*scommon.Message))
+	}
+	return msgs
+}
+
+func (a *Actor) parseAggregated(data brokerpk.Aggregated) {
+	switch d := data.Data.(type) {
+	case *broker.RPCCompletion:
+		a.onCompletion(d)
+	case *scommon.Message:
+		a.onMessage([]*scommon.Message{d})
+	}
+}
+
+func DeduplicationInputs(inputs [][]string) []string {
+	totalSize := 0
+	for i := range inputs {
+		totalSize += len(inputs[i])
+	}
+	pools := make(map[string]int, totalSize)
+	for i := range inputs {
+		for j := range inputs[i] {
+			pools[inputs[i][j]] = 0
+		}
+	}
+	outputs := make([]string, 0, len(pools))
+	for input := range pools {
+		outputs = append(outputs, input)
+	}
+	return outputs
+}
+
+func DeduplicationOutputs(inputs []map[string]int) map[string]int {
+	totalSize := 0
+	for i := range inputs {
+		totalSize += len(inputs[i])
+	}
+	pools := make(map[string]int, totalSize)
+	for i := range inputs {
+		for k, v := range inputs[i] {
+			pools[k] = v
+		}
+	}
+	return pools
 }

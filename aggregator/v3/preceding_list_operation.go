@@ -20,12 +20,13 @@ package aggregator
 import (
 	eushared "github.com/arcology-network/eu/shared"
 	"github.com/arcology-network/streamer/actor"
+	scommon "github.com/arcology-network/streamer/common"
 	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type PrecedingListOperation struct{}
 
-func (op *PrecedingListOperation) GetData(msg *actor.Message) (hashes []evmCommon.Hash, data []interface{}) {
+func (op *PrecedingListOperation) GetData(msg *scommon.Message) (hashes []evmCommon.Hash, data []interface{}) {
 	results := msg.Data.(*eushared.Euresults)
 	if results == nil || len(*results) == 0 {
 		return
@@ -38,7 +39,7 @@ func (op *PrecedingListOperation) GetData(msg *actor.Message) (hashes []evmCommo
 	return
 }
 
-func (op *PrecedingListOperation) GetList(msg *actor.Message) (hashes []evmCommon.Hash) {
+func (op *PrecedingListOperation) GetList(msg *scommon.Message) (hashes []evmCommon.Hash) {
 	precedings := msg.Data.(*[]*evmCommon.Hash)
 	for _, hash := range *precedings {
 		hashes = append(hashes, *hash)
@@ -46,7 +47,7 @@ func (op *PrecedingListOperation) GetList(msg *actor.Message) (hashes []evmCommo
 	return
 }
 
-func (op *PrecedingListOperation) OnListFulfilled(data []interface{}, broker *actor.MessageWrapper) {
+func (op *PrecedingListOperation) OnListFulfilled(data []interface{}, broker *actor.ExecutionContext) {
 	broker.Send(actor.MsgPrecedingsEuresult, data)
 }
 

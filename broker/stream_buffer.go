@@ -28,33 +28,33 @@ type streamBuffer interface {
 	Serve()
 }
 
-type defaultStreamBuffer struct {
+type DefaultStreamBuffer struct {
 	name      string
 	buf       chan interface{}
 	listeners []streamListener
 }
 
-func newDefaultStreamBuffer(name string, length int) *defaultStreamBuffer {
+func NewDefaultStreamBuffer(name string, length int) *DefaultStreamBuffer {
 	if length < 1 {
 		panic("length of defaultStreamBuffer should >= 1")
 	}
 
-	return &defaultStreamBuffer{
+	return &DefaultStreamBuffer{
 		name: name,
 		buf:  make(chan interface{}, length),
 	}
 }
 
-func (dsb *defaultStreamBuffer) Add(newItem interface{}) {
+func (dsb *DefaultStreamBuffer) Add(newItem interface{}) {
 	dsb.buf <- newItem
 	promProduceCounter.With(prometheus.Labels{"channel": dsb.name}).Inc()
 }
 
-func (dsb *defaultStreamBuffer) RegisterListener(l streamListener) {
+func (dsb *DefaultStreamBuffer) RegisterListener(l streamListener) {
 	dsb.listeners = append(dsb.listeners, l)
 }
 
-func (dsb *defaultStreamBuffer) Serve() {
+func (dsb *DefaultStreamBuffer) Serve() {
 	for item := range dsb.buf {
 		for _, l := range dsb.listeners {
 			l.Notify(item)
@@ -67,21 +67,21 @@ type Comparable interface {
 	Equals(rhs Comparable) bool
 }
 
-type staticStreamBuffer struct {
+type StaticStreamBuffer struct {
 	name      string
 	buf       chan Comparable
 	state     Comparable
 	listeners []streamListener
 }
 
-func newStaticStreamBuffer(name string) *staticStreamBuffer {
-	return &staticStreamBuffer{
+func NewStaticStreamBuffer(name string) *StaticStreamBuffer {
+	return &StaticStreamBuffer{
 		name: name,
 		buf:  make(chan Comparable),
 	}
 }
 
-func (ssb *staticStreamBuffer) Add(newItem interface{}) {
+func (ssb *StaticStreamBuffer) Add(newItem interface{}) {
 	c, ok := newItem.(Comparable)
 	if !ok {
 		panic("non comparable object got")
@@ -91,11 +91,11 @@ func (ssb *staticStreamBuffer) Add(newItem interface{}) {
 	promProduceCounter.With(prometheus.Labels{"channel": ssb.name}).Inc()
 }
 
-func (ssb *staticStreamBuffer) RegisterListener(l streamListener) {
+func (ssb *StaticStreamBuffer) RegisterListener(l streamListener) {
 	ssb.listeners = append(ssb.listeners, l)
 }
 
-func (ssb *staticStreamBuffer) Serve() {
+func (ssb *StaticStreamBuffer) Serve() {
 	for item := range ssb.buf {
 		promConsumeCounter.With(prometheus.Labels{"channel": ssb.name}).Inc()
 		if ssb.state != nil && ssb.state.Equals(item) {

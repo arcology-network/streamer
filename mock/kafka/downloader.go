@@ -23,6 +23,7 @@ import (
 
 	"github.com/arcology-network/streamer/actor"
 	"github.com/arcology-network/streamer/broker"
+	scommon "github.com/arcology-network/streamer/common"
 )
 
 // Download implements IWorker interface.
@@ -38,16 +39,16 @@ func NewDownloader(_ int, _ string, _, messageTypes []string, _ string) actor.IW
 	}
 }
 
-func (d *Downloader) Init(wtName string, broker *broker.StatefulStreamer) {
+func (d *Downloader) Init(owner actor.IWorker, wtName string, broker *broker.StatefulStreamer) *actor.ActionRouter {
 	t.Log("Downloader.Init")
 	d.broker = &actor.MessageWrapper{
 		MsgBroker:      broker,
-		LatestMessage:  actor.NewMessage(),
 		WorkThreadName: wtName,
 	}
+	return nil
 }
 
-func (d *Downloader) ChangeEnvironment(_ *actor.Message) {
+func (d *Downloader) ChangeEnvironment(_ *scommon.Message) {
 
 }
 
@@ -67,12 +68,18 @@ func (d *Downloader) OnStart() {
 	t.Log("Downloader.OnStart")
 }
 
-func (d *Downloader) OnMessageArrived(_ []*actor.Message) error {
+func (d *Downloader) OnMessageArrived(_ []*scommon.Message) error {
 	return nil
+}
+func (d *Downloader) ActionRegister() {
+
+}
+func (d *Downloader) RpcConfig() (string, int) {
+	return "", 0
 }
 
 // Receive is used for testing.
-func (d *Downloader) Receive(msg *actor.Message) {
+func (d *Downloader) Receive(msg *scommon.Message) {
 	for _, typ := range d.messageTypes {
 		if typ == msg.Name {
 			d.broker.LatestMessage = msg

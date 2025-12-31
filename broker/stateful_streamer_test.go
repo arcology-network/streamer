@@ -39,7 +39,7 @@ type mockActor1 struct {
 	c chan interface{}
 }
 
-func (mw1 *mockActor1) Consume(data interface{}) {
+func (mw1 *mockActor1) Consume(data ActorEvent) {
 	mw1.c <- data
 }
 
@@ -53,7 +53,7 @@ type mockActor2 struct {
 	c chan interface{}
 }
 
-func (mw2 *mockActor2) Consume(data interface{}) {
+func (mw2 *mockActor2) Consume(data ActorEvent) {
 	mw2.c <- data
 }
 

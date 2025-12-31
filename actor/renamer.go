@@ -30,7 +30,6 @@ func RenamerName(from, to string) string {
 }
 
 type Renamer struct {
-	WorkerThread
 	from string
 	to   string
 }
@@ -45,12 +44,14 @@ func (r *Renamer) To(to string) *Renamer {
 }
 
 func (r *Renamer) On(broker *brokerpk.StatefulStreamer) *Renamer {
-	renamer := NewActorEx(
+	CreateActor(
 		RenamerName(r.from, r.to),
 		broker,
-		r,
+		[]Business{r},
+		[]string{"renamer"},
+		[]*Filter{},
+		2,
 	)
-	renamer.Connect(brokerpk.NewDisjunctions(renamer, 1))
 	return r
 }
 
@@ -63,18 +64,21 @@ func (r *Renamer) Outputs() map[string]int {
 		r.to: 1,
 	}
 }
+func (r *Renamer) RpcConfig() (string, int) {
+	return "", 0
+}
 
-func (r *Renamer) OnStart() {
+func (r *Renamer) Config(params map[string]interface{}) {
 
 }
 
-func (r *Renamer) OnMessageArrived(msgs []*Message) error {
-	for _, v := range msgs {
-		switch v.Name {
-		case r.from:
-			r.MsgBroker.Send(r.to, v.Data)
-		}
-	}
+// Action
+func (r *Renamer) RegisterActions(reg ActionRegistrar) {
+	reg.Register(r.from, r.rename)
+}
 
+func (r *Renamer) rename(ctx *ActionContext) error {
+	msg := ctx.Messages[0]
+	ctx.ExecCtx.Send(r.to, msg.Data)
 	return nil
 }

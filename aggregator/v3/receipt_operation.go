@@ -22,6 +22,7 @@ import (
 
 	"github.com/arcology-network/common-lib/types"
 	"github.com/arcology-network/streamer/actor"
+	scommon "github.com/arcology-network/streamer/common"
 	evmCommon "github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -134,7 +135,7 @@ func ParseData(datas []byte) ([]evmCommon.Hash, []byte) {
 
 type ReceiptOperation struct{}
 
-func (op *ReceiptOperation) GetData(msg *actor.Message) (hashes []evmCommon.Hash, data []interface{}) {
+func (op *ReceiptOperation) GetData(msg *scommon.Message) (hashes []evmCommon.Hash, data []interface{}) {
 	receipts := msg.Data.(*[]*ethTypes.Receipt)
 	if receipts == nil {
 		return
@@ -147,22 +148,17 @@ func (op *ReceiptOperation) GetData(msg *actor.Message) (hashes []evmCommon.Hash
 	return
 }
 
-func (op *ReceiptOperation) GetList(msg *actor.Message) []evmCommon.Hash {
-	// list := msg.Data.(*types.InclusiveList).HashList
-	// for _, hash := range list {
-	// 	hashes = append(hashes, *hash)
-	// }
-	// return
+func (op *ReceiptOperation) GetList(msg *scommon.Message) []evmCommon.Hash {
+
 	return msg.Data.(*types.InclusiveList).HashList
 }
 
-func (op *ReceiptOperation) OnListFulfilled(data []interface{}, broker *actor.MessageWrapper) {
+func (op *ReceiptOperation) OnListFulfilled(data []interface{}, broker *actor.ExecutionContext) {
 	var receipts []*ethTypes.Receipt
 	for _, item := range data {
 		receipts = append(receipts, item.(*ethTypes.Receipt))
 	}
 	broker.Send(actor.MsgSelectedReceipts, PostProcess(receipts))
-	// broker.Send(actor.MsgSelectedReceipts, receipts)
 }
 
 func (op *ReceiptOperation) Outputs() map[string]int {

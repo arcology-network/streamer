@@ -24,7 +24,7 @@ import (
 )
 
 type DataPreprocessor struct {
-	actor.WorkerThread
+	height uint64
 }
 
 func NewDataPreprocessor() *DataPreprocessor {
@@ -39,24 +39,31 @@ func (dpp *DataPreprocessor) Outputs() map[string]int {
 	return map[string]int{}
 }
 
-func (dpp *DataPreprocessor) OnStart() {}
+func (dpp *DataPreprocessor) RegisterActions(reg actor.ActionRegistrar) {
+	reg.Register(msgData, dpp.ReceivedData)
+}
 
-func (dpp *DataPreprocessor) OnMessageArrived(msgs []*actor.Message) error {
-	msg := msgs[0]
+func (dpp *DataPreprocessor) ReceivedData(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
 	if msg.Name == msgData {
+		dpp.height = msg.Height
 		fmt.Printf("DPP: %v\n", msg)
 	}
 	return nil
 }
+func (dpp *DataPreprocessor) Height() uint64 {
+	return dpp.height
+}
 
 type DataPreprocessorV2 struct {
-	actor.WorkerThread
 }
 
 func NewDataPreprocessorV2() *DataPreprocessorV2 {
 	return &DataPreprocessorV2{}
 }
-
+func (dpp *DataPreprocessorV2) RpcConfig() (string, int) {
+	return "", 0
+}
 func (dpp *DataPreprocessorV2) Inputs() ([]string, bool) {
 	return []string{msgData}, false
 }
@@ -65,13 +72,15 @@ func (dpp *DataPreprocessorV2) Outputs() map[string]int {
 	return map[string]int{}
 }
 
-func (dpp *DataPreprocessorV2) OnStart() {}
+func (dpp *DataPreprocessorV2) RegisterActions(reg actor.ActionRegistrar) {
+	reg.Register(msgData, dpp.OnMessageArrived)
+}
 
-func (dpp *DataPreprocessorV2) OnMessageArrived(msgs []*actor.Message) error {
-	msg := msgs[0]
+func (dpp *DataPreprocessorV2) OnMessageArrived(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
 	if msg.Name == msgData {
 		fmt.Printf("DPP: %v\n", msg)
-		dpp.MsgBroker.Send(msg.Name, msg.Data)
+		ctx.ExecCtx.Send(msg.Name, msg.Data)
 	}
 	return nil
 }

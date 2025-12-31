@@ -65,16 +65,36 @@ func NewStatefulStreamer() *StatefulStreamer {
 	}
 }
 
+func (ss *StatefulStreamer) RegisterBuffer(name string, buf streamBuffer) {
+	ss.buffers[name] = buf
+}
+
 func (ss *StatefulStreamer) RegisterProducer(p StreamProducer) {
 	ss.producers = append(ss.producers, p)
 }
 
 func (ss *StatefulStreamer) RegisterConsumer(c StreamConsumer) {
 	ss.consumers = append(ss.consumers, c)
+	// 🔑 确保 consumer 的 input buffer 一定存在
+	for _, input := range c.GetInputs() {
+		if input[0] == '#' {
+			continue
+		}
+		ss.ensureBuffer(input)
+	}
 }
 
 func (ss *StatefulStreamer) Send(name string, data interface{}) {
 	ss.buffers[name].Add(data)
+}
+
+const DefaultConsumerBufferSize = 1
+
+func (ss *StatefulStreamer) ensureBuffer(name string) {
+	if _, ok := ss.buffers[name]; ok {
+		return
+	}
+	ss.buffers[name] = NewDefaultStreamBuffer(name, DefaultConsumerBufferSize)
 }
 
 func (ss *StatefulStreamer) Serve() {
@@ -83,9 +103,9 @@ func (ss *StatefulStreamer) Serve() {
 		lengths := p.GetBufferLengths()
 		for i := range outputs {
 			if lengths[i] != 0 {
-				ss.buffers[outputs[i]] = newDefaultStreamBuffer(outputs[i], lengths[i])
+				ss.buffers[outputs[i]] = NewDefaultStreamBuffer(outputs[i], lengths[i])
 			} else {
-				ss.buffers[outputs[i]] = newStaticStreamBuffer(outputs[i])
+				ss.buffers[outputs[i]] = NewStaticStreamBuffer(outputs[i])
 			}
 		}
 	}
@@ -97,7 +117,11 @@ func (ss *StatefulStreamer) Serve() {
 				c.GetStreamController().GetListener(inputs[i])
 				continue
 			}
-			ss.buffers[inputs[i]].RegisterListener(c.GetStreamController().GetListener(inputs[i]))
+			buf, ok := ss.buffers[inputs[i]]
+			if !ok {
+				panic("buffer must exist for input: " + inputs[i])
+			}
+			buf.RegisterListener(c.GetStreamController().GetListener(inputs[i]))
 		}
 		go c.GetStreamController().Serve()
 	}

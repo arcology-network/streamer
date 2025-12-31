@@ -23,15 +23,16 @@ import (
 	"github.com/arcology-network/common-lib/common"
 	"github.com/arcology-network/streamer/actor"
 	"github.com/arcology-network/streamer/broker"
+	scommon "github.com/arcology-network/streamer/common"
 )
 
-type OnMessageArrivedCallback func(msgs []*actor.Message) error
+type OnMessageArrivedCallback func(msgs []*scommon.Message) error
 
 type Uploader struct {
 	messages        map[string]string
 	broker          *actor.MessageWrapper
 	counter         map[string]int
-	encChan         chan *actor.Message
+	encChan         chan *scommon.Message
 	dataSizeCounter map[string]int
 	cb              OnMessageArrivedCallback
 }
@@ -41,7 +42,7 @@ func NewUploader(_ int, _ string, messages map[string]string, _ string) actor.IW
 	return &Uploader{
 		messages:        messages,
 		counter:         make(map[string]int),
-		encChan:         make(chan *actor.Message, 1000),
+		encChan:         make(chan *scommon.Message, 1000),
 		dataSizeCounter: make(map[string]int),
 	}
 }
@@ -50,16 +51,16 @@ func (u *Uploader) SetCallback(cb OnMessageArrivedCallback) {
 	u.cb = cb
 }
 
-func (u *Uploader) Init(wtName string, broker *broker.StatefulStreamer) {
+func (u *Uploader) Init(owner actor.IWorker, wtName string, broker *broker.StatefulStreamer) *actor.ActionRouter {
 	tu.Log("Uploader.Init")
 	u.broker = &actor.MessageWrapper{
 		MsgBroker:      broker,
-		LatestMessage:  actor.NewMessage(),
 		WorkThreadName: wtName,
 	}
+	return nil
 }
 
-func (u *Uploader) ChangeEnvironment(_ *actor.Message) {
+func (u *Uploader) ChangeEnvironment(_ *scommon.Message) {
 
 }
 
@@ -88,7 +89,7 @@ func (u *Uploader) OnStart() {
 	}()
 }
 
-func (u *Uploader) OnMessageArrived(msgs []*actor.Message) error {
+func (u *Uploader) OnMessageArrived(msgs []*scommon.Message) error {
 	if u.cb != nil {
 		u.cb(msgs)
 	}
@@ -98,6 +99,12 @@ func (u *Uploader) OnMessageArrived(msgs []*actor.Message) error {
 		u.encChan <- m
 	}
 	return nil
+}
+func (u *Uploader) ActionRegister() {
+
+}
+func (u *Uploader) RpcConfig() (string, int) {
+	return "", 0
 }
 
 // For test.

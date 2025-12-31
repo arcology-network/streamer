@@ -20,12 +20,13 @@ package aggregator
 import (
 	types "github.com/arcology-network/common-lib/types"
 	"github.com/arcology-network/streamer/actor"
+	scommon "github.com/arcology-network/streamer/common"
 	evmCommon "github.com/ethereum/go-ethereum/common"
 )
 
 type ReceiptHashOperation struct{}
 
-func (op *ReceiptHashOperation) GetData(msg *actor.Message) ([]evmCommon.Hash, []interface{}) {
+func (op *ReceiptHashOperation) GetData(msg *scommon.Message) ([]evmCommon.Hash, []interface{}) {
 	receiptHashes := msg.Data.(*types.ReceiptHashList)
 
 	if receiptHashes == nil {
@@ -45,17 +46,12 @@ func (op *ReceiptHashOperation) GetData(msg *actor.Message) ([]evmCommon.Hash, [
 	return hashes, data
 }
 
-func (op *ReceiptHashOperation) GetList(msg *actor.Message) []evmCommon.Hash {
-	// list := msg.Data.(*types.InclusiveList).HashList
-	// hashes := make([]evmCommon.Hash, 0, len(list))
-	// for i := range list {
-	// 	hashes = append(hashes, list[i])
-	// }
-	// return hashes
+func (op *ReceiptHashOperation) GetList(msg *scommon.Message) []evmCommon.Hash {
+
 	return msg.Data.(*types.InclusiveList).HashList
 }
 
-func (op *ReceiptHashOperation) OnListFulfilled(data []interface{}, broker *actor.MessageWrapper) {
+func (op *ReceiptHashOperation) OnListFulfilled(data []interface{}, broker *actor.ExecutionContext) {
 	receipts := make(map[evmCommon.Hash]*types.ReceiptHash)
 	for i := range data {
 		rh := data[i].(*types.ReceiptHash)
