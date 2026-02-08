@@ -32,7 +32,7 @@ func TestAggrSelector(t *testing.T) {
 	broker := brokerpk.NewStatefulStreamer()
 	dataProcessor := NewDataPreprocessor()
 	aggr := NewAggrSelector()
-	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, []*actor.Filter{}, 8)
+	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, 8, []string{""})
 
 	broker.Serve()
 
@@ -69,7 +69,7 @@ func TestAggrSelector2(t *testing.T) {
 	broker := brokerpk.NewStatefulStreamer()
 	dataProcessor := NewDataPreprocessor()
 	aggr := NewAggrSelector()
-	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, []*actor.Filter{}, 8)
+	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, 8, []string{""})
 
 	broker.Serve()
 
@@ -96,7 +96,7 @@ func TestAggrSelectorWithMsgCleaner(t *testing.T) {
 	broker := brokerpk.NewStatefulStreamer()
 	dataProcessor := NewDataPreprocessor()
 	aggr := NewAggrSelector()
-	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, []*actor.Filter{}, 8)
+	actor.CreateActor("aggrselector", broker, []actor.Business{dataProcessor, aggr}, []string{"dataProcessor", "aggr"}, 8, []string{""})
 
 	filter := actor.NewOriginFilter(
 		"origin-filter",
@@ -104,15 +104,16 @@ func TestAggrSelectorWithMsgCleaner(t *testing.T) {
 			return msg.Name != msgData || msg.From != "sender"
 		},
 	)
-	actor.CreateActor("aggrselector", broker, []actor.Business{aggr}, []string{"aggr"}, []*actor.Filter{filter}, 8)
+	act := actor.CreateActor("aggrselector", broker, []actor.Business{aggr}, []string{"aggr"}, 8, []string{""})
+	act.SetFilters([]*actor.Filter{filter})
 
 	dataProcessor2 := NewDataPreprocessorV2()
 	filter1 := actor.NewOriginFilter(
 		"origin-filter1",
 		actor.OnlyFrom("sender"),
 	)
-	actor.CreateActor("datapreprocessor", broker, []actor.Business{dataProcessor2}, []string{"dataProcessor2"}, []*actor.Filter{filter1}, 8)
-
+	act = actor.CreateActor("datapreprocessor", broker, []actor.Business{dataProcessor2}, []string{"dataProcessor2"}, 8, []string{""})
+	act.SetFilters([]*actor.Filter{filter1})
 	broker.Serve()
 
 	broker.Send(msgData, &scommon.Message{From: "sender", Name: msgData, Data: "item1", Height: 0})
