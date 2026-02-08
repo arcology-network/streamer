@@ -9,7 +9,10 @@ const (
 	RPC_RECV = "rpc_received"
 )
 
-func init() {
-	cfg := LoadConfigWithFallback("./log.toml")
+func InitLog(logcfgfile, logfile string) {
+	cfg := LoadConfigWithFallback(logcfgfile)
+	if len(logfile) > 0 {
+		cfg.LogFile = logfile
+	}
 	Log = New(*cfg)
 }
