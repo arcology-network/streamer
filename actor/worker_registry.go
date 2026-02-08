@@ -17,7 +17,9 @@
 
 package actor
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type WorkerCreator func() Business
 
@@ -33,13 +35,17 @@ func (factory *WorkerFactory) Register(name string, creator WorkerCreator) {
 	factory.registry[name] = creator
 }
 
-func (factory *WorkerFactory) Create(name string, concurrency int, groupId string, params map[string]interface{}) Business {
+func (factory *WorkerFactory) Create(name string, concurrency int, groupId string, params map[string]interface{}, sender OutboundSender) Business {
 	if creator, ok := factory.registry[name]; !ok {
 		panic("worker name not found: " + name)
 	} else {
 		worker := creator()
 		if len(params) == 0 {
 			return worker
+		}
+
+		if senderable, ok := worker.(Sendable); ok {
+			senderable.SetSender(sender)
 		}
 
 		if configurable, ok := worker.(Configurable); !ok {
