@@ -44,6 +44,7 @@ func InitGlobalRPCClient(stream *broker.StatefulStreamer, maxConcurrent int, req
 
 	clientActor := &mockClientActor{}
 	ctrl := broker.NewRPCController(clientActor, stream, bufSize)
+	ctrl.RegisterGlobalReplyListener()
 	clientActor.controller = ctrl
 
 	GlobalRPCClient = &RPCClient{

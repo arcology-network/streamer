@@ -62,20 +62,19 @@ func Combine(inputs ...string) *Combiner {
 	}
 }
 
-func (c *Combiner) On(broker *brokerpk.StatefulStreamer) *Combiner {
-	CreateActor(
+func (c *Combiner) On(broker *brokerpk.StatefulStreamer) (Business, *Actor) {
+	act := CreateActor(
 		c.outMsg,
 		broker,
 		[]Business{c},
 		[]string{"combiner"},
-		[]*Filter{},
+		// []*Filter{},
 		2,
+		[]string{""},
 	)
-	return c
+	return c, act
 }
-func (w *Combiner) RpcConfig() (string, int) {
-	return "", 0
-}
+
 func (c *Combiner) Inputs() ([]string, bool) {
 	return c.inputs, true
 }
@@ -84,6 +83,10 @@ func (c *Combiner) Outputs() map[string]int {
 	return map[string]int{
 		c.outMsg: 1,
 	}
+}
+
+func (c *Combiner) PrimaryMsg() string {
+	return c.inputs[0]
 }
 
 func (c *Combiner) Config(params map[string]interface{}) {

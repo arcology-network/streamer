@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/arcology-network/streamer/actor/rpc"
 	"github.com/arcology-network/streamer/broker"
@@ -42,19 +43,26 @@ type Actor struct {
 	inbox chan brokerpk.ActorEvent
 
 	continuations *ContinuationManager
+
+	primaryMsg string
+
+	callframes map[string]*CallFrame
+	cfLock     sync.Mutex
 }
 
-func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Business, businessNames []string, filters []*Filter, concurrency int) *Actor {
+func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Business, businessNames []string, concurrency int, rpcServers []string) *Actor {
 	rpccomplete := name + ".rpc.complete"
 	actor := &Actor{
 		inbox:            make(chan brokerpk.ActorEvent, 1024),
 		name:             name,
 		broker:           broker,
-		execCtx:          NewExecutionContext(name, rpccomplete, broker, concurrency),
+		execCtx:          NewExecutionContext(name, broker, concurrency),
 		rpcIndex:         make(map[string]*ControlledNode, len(businesses)),
 		rpcCompleteTopic: rpccomplete,
 
 		continuations: NewContinuationManager(),
+		primaryMsg:    "",
+		callframes:    make(map[string]*CallFrame),
 	}
 
 	//create chain
@@ -62,7 +70,7 @@ func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Bu
 	list_outputs := make([]map[string]int, len(businesses))
 	nodes := make([]*ControlledNode, 0, len(businesses))
 	chainIsConjunction := false
-	withRpcServer := false
+	// withRpcServer := false
 	for i := range businesses {
 		//create businesschain
 		inputs, isConjunction := businesses[i].Inputs()
@@ -71,6 +79,14 @@ func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Bu
 
 		if isConjunction && len(businesses) > 1 {
 			panic("All elements in the pipeline must be DisConjunction.")
+		}
+
+		if isConjunction {
+			if _, ok := businesses[i].(PickPrimary); ok {
+				actor.primaryMsg = businesses[i].(PickPrimary).PrimaryMsg()
+			} else {
+				panic(businessNames[i] + " is conjunction , that must implement PickPrimary interface.")
+			}
 		}
 
 		if i == 0 {
@@ -83,10 +99,10 @@ func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Bu
 		controllers := make([]Controller, 0, 2)
 		if !isConjunction {
 			if _, ok := businesses[i].(HeightSensitive); ok {
-				controllers = append(controllers, NewHeightController(businesses[i].(HeightSensitive)))
+				controllers = append(controllers, NewHeightController(businesses[i].(HeightSensitive), businessNames[i]))
 			}
 			if _, ok := businesses[i].(FSMCompatible); ok {
-				controllers = append(controllers, NewFSMController(businesses[i].(FSMCompatible)))
+				controllers = append(controllers, NewFSMController(businesses[i].(FSMCompatible), businessNames[i]))
 			}
 		}
 		node := NewControlledNode(businesses[i], controllers, businessNames[i], i)
@@ -95,6 +111,9 @@ func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Bu
 		//rpc server
 		if _, ok := businesses[i].(RpcConfigurable); ok {
 			serviceName, bufferSize := businesses[i].(RpcConfigurable).RpcConfig()
+			if len(rpcServers) > 0 && len(rpcServers[i]) > 0 {
+				serviceName = rpcServers[i] //When the RPC server is part of a cluster, enable this configuration.
+			}
 			serviceName = strings.Trim(serviceName, " ")
 			if len(serviceName) > 0 {
 				rpc.NewRPCService("rpc."+serviceName, actor, broker, bufferSize)
@@ -103,11 +122,19 @@ func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Bu
 					panic(err)
 				}
 				actor.rpcIndex["rpc."+serviceName] = node
-				withRpcServer = true
+
 			}
 		}
 	}
-	actor.chain = NewBusinessChain(nodes, filters)
+	actor.chain = NewBusinessChain(nodes)
+
+	actor.broker.RegisterProducer(brokerpk.NewDefaultProducer(actor.name+"-rpc-producer", []string{rpccomplete}, []int{1}))
+	actor.broker.RegisterConsumer(
+		brokerpk.NewDefaultConsumer(
+			actor.name+"-rpc-consumer",
+			[]string{rpccomplete},
+			brokerpk.NewDisjunctions(actor, 1),
+		))
 
 	//RegisterProducer
 	if list_outputs != nil || len(list_outputs) > 0 {
@@ -118,18 +145,13 @@ func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Bu
 			publishTo = append(publishTo, k)
 			bufferLen = append(bufferLen, v)
 		}
-		if withRpcServer {
-			publishTo = append(publishTo, rpccomplete)
-			bufferLen = append(bufferLen, 1)
-		}
+
 		actor.broker.RegisterProducer(brokerpk.NewDefaultProducer(name+"-producer", publishTo, bufferLen))
 	}
 
 	//RegisterConsumer
 	inputs := DeduplicationInputs(list_inputs)
-	if withRpcServer {
-		inputs = append(inputs, rpccomplete)
-	}
+
 	var controller brokerpk.StreamController
 	if chainIsConjunction {
 		controller = brokerpk.NewConjunctions(actor)
@@ -142,6 +164,42 @@ func CreateActor(name string, broker *brokerpk.StatefulStreamer, businesses []Bu
 
 	go actor.Serve()
 	return actor
+}
+
+func (a *Actor) registerFrame(cf *CallFrame) {
+	a.cfLock.Lock()
+	a.callframes[cf.ReqID] = cf
+	a.cfLock.Unlock()
+}
+
+func (a *Actor) getFrame(reqID string) *CallFrame {
+	a.cfLock.Lock()
+	defer a.cfLock.Unlock()
+	return a.callframes[reqID]
+}
+
+func (a *Actor) removeFrame(reqID string) {
+	a.cfLock.Lock()
+	delete(a.callframes, reqID)
+	a.cfLock.Unlock()
+}
+
+func PickPrimaryMsg(msgs []*scommon.Message, primaryMsg string) *scommon.Message {
+	if len(primaryMsg) == 0 {
+		return msgs[0]
+	} else {
+		for i := range msgs {
+			if msgs[i] != nil && msgs[i].Name == primaryMsg {
+				return msgs[i]
+			}
+		}
+	}
+
+	return nil
+}
+
+func (a *Actor) SetFilters(filters []*Filter) {
+	a.chain.SetFilters(filters)
 }
 
 func (a *Actor) RegisterContinuation(id string, c Continuation) {
@@ -184,28 +242,66 @@ func (a *Actor) Serve() {
 }
 
 func (a *Actor) onMessage(msgs []*scommon.Message) {
-	a.log(msgs)
-
-	if err := a.chain.OnMessages(msgs, a.execCtx); err != nil {
+	nmsgs := make([]*scommon.Message, 0, len(msgs))
+	for i := range msgs {
+		if msgs[i] != nil {
+			nmsgs = append(nmsgs, msgs[i])
+		}
+	}
+	if len(nmsgs) == 0 {
 		logger.Log.Error(
 			context.Background(),
-			a.name+" execute msg Err",
+			a.name, "Received msg is nil",
+		)
+		return
+	}
+	a.log(nmsgs)
+
+	primaryMsg := PickPrimaryMsg(msgs, a.primaryMsg)
+	if primaryMsg != nil && primaryMsg.ReqID != "" {
+		cf := a.getFrame(primaryMsg.ReqID)
+		if cf == nil {
+			// create temp frame(only use for trace,not add into global map )
+			cf = &CallFrame{ReqID: primaryMsg.ReqID, ReqMsg: primaryMsg, Parent: a.execCtx.Current}
+		}
+		a.execCtx.Current = cf
+	} else {
+		a.execCtx.Current = nil
+	}
+
+	if err := a.chain.OnMessages(nmsgs, a.execCtx); err != nil {
+		logger.Log.Error(
+			context.Background(),
+			a.name, "Execute msg Err",
 			logger.F("err", err),
 		)
 	}
 }
 
+func CallFrameFrom(msg *scommon.Message) *CallFrame {
+	return &CallFrame{
+		ReqID:   msg.ReqID,
+		ReqMsg:  msg,
+		ReplyTo: msg.ReplyTo,
+	}
+}
+
 func (a *Actor) ParseStep(step string) (string, *ControlledNode) {
+	nextStep, idx := NextStep(a.name, step)
+	return nextStep, a.chain.GetNode(idx)
+}
+
+func NextStep(name string, step string) (string, int) {
 	spans := strings.Split(step, ".")
 	if len(spans) != 2 {
-		return "", nil
+		return "", -1
 	}
 	idx, err := strconv.Atoi(spans[0])
 	if err != nil {
-		logger.Log.Error(context.Background(), "ContinuationNext step err", logger.F("step", step))
-		return "", nil
+		logger.Log.Error(context.Background(), name, "ContinuationNext step err", logger.F("step", step))
+		return "", -1
 	}
-	return spans[1], a.chain.GetNode(idx)
+	return spans[1], idx
 }
 
 func (a *Actor) onContinuationNext(inv *ContinuationNext) {
@@ -215,7 +311,7 @@ func (a *Actor) onContinuationNext(inv *ContinuationNext) {
 	step, node := a.ParseStep(inv.Step)
 
 	if node == nil {
-		logger.Log.Error(context.Background(), "rpc request node not found")
+		logger.Log.Error(context.Background(), a.name, "Rpc request node not found")
 		return
 	}
 
@@ -224,10 +320,12 @@ func (a *Actor) onContinuationNext(inv *ContinuationNext) {
 	}
 
 	ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), rpcmsg)
-	logger.Log.Debug(ctx, a.name+" start rpc Request next")
+	logger.Log.Debug(ctx, a.name, "Start rpc Request next")
+
+	a.execCtx.Current = inv.Frame
 
 	if step == "" {
-		logger.Log.Warn(ctx, "rpc continuation without next step")
+		logger.Log.Warn(ctx, a.name, "Rpc continuation without next step")
 		return
 	}
 
@@ -236,62 +334,82 @@ func (a *Actor) onContinuationNext(inv *ContinuationNext) {
 		return
 	}
 
-	node.StartRPC(
+	if inv.Frame != nil {
+		a.execCtx.Current = inv.Frame.Parent
+	}
+
+	err := node.StartRPC(
 		step,
 		[]*scommon.Message{rpcmsg},
 		rpcCtx,
 		a.execCtx,
 	)
+	if err != nil {
+		logger.Log.Error(context.Background(), a.name, err.Error())
+	}
 }
 
 func (a *Actor) onInvocation(inv *brokerpk.RPCInvocation) {
 	node := a.rpcIndex[inv.ServerName]
 	if node == nil {
-		logger.Log.Error(context.Background(), inv.ServerName+" not configure")
+		logger.Log.Error(context.Background(), a.name, inv.ServerName+" not configure")
 		return
 	}
 
-	reqID := inv.ID
-
 	rpcmsg := inv.Payload.(*scommon.Message)
+
 	rpcmsg.ReplyTo = inv.ReplyTo
+	cf := &CallFrame{
+		ReqID:   rpcmsg.ReqID,
+		ReqMsg:  rpcmsg,
+		ReplyTo: rpcmsg.ReplyTo,
+	}
 
+	a.registerFrame(cf)
+
+	execCtx := a.execCtx.Fork()
+	execCtx.Current = cf
 	ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), rpcmsg)
-	logger.Log.Debug(ctx, a.name+" received rpc Request")
+	logger.Log.Debug(ctx, a.name, "Received rpc Request")
 
-	a.RegisterContinuation(reqID, NewDefaultContinuation(a.broker, a.name, rpcmsg))
+	a.RegisterContinuation(cf.ReqID, NewDefaultContinuation(a.broker, a.name, cf))
 
 	rpcCtx := &RPCContext{
 		Request: rpcmsg.Data,
 	}
 
-	node.StartRPC(
+	err := node.StartRPC(
 		inv.Method,
 		[]*scommon.Message{rpcmsg},
 		rpcCtx,
-		a.execCtx,
+		execCtx,
 	)
+	if err != nil {
+		logger.Log.Error(context.Background(), a.name, err.Error())
+	}
+
 }
 
 func (a *Actor) onCompletion(comp *brokerpk.RPCCompletion) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Log.Error(context.Background(), "panic in continuation", logger.F("id", comp.ID), logger.F("err", r))
+			logger.Log.Error(context.Background(), a.name, "panic in continuation", logger.F("id", comp.ID), logger.F("err", r))
 		}
 	}()
 
+	// log.Printf("[Rpc] Actor onCompletion -- MsdId:%v", comp.ID)
 	if !a.continuations.Resume(comp.ID, comp) {
 		logger.Log.Warn(
-			context.Background(), "RPCCompletion dropped: no continuation",
+			context.Background(), a.name, "RPCCompletion dropped: no continuation",
 			logger.F("id", comp.ID),
 		)
 	}
 }
 
-func (actor *Actor) log(msgs []*scommon.Message) {
+func (a *Actor) log(msgs []*scommon.Message) {
 	for _, v := range msgs {
 		ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), v)
-		logger.Log.Debug(ctx, actor.name+" received Msg")
+		logger.Log.Debug(ctx, a.name, "Received Msg")
 	}
 }
 

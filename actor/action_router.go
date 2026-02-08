@@ -62,7 +62,7 @@ func (r *ActionRouter) Dispatch(
 	}
 
 	execctx = r.UpdateCtx(msgs, execctx, action)
-	r.log(msgs)
+	r.log(execctx, msgs)
 	ctx := &ActionContext{
 		ExecCtx:  execctx,
 		Messages: msgs,
@@ -72,10 +72,10 @@ func (r *ActionRouter) Dispatch(
 	return action(ctx)
 }
 
-func (r *ActionRouter) log(msgs []*scommon.Message) {
+func (r *ActionRouter) log(execCtx *ExecutionContext, msgs []*scommon.Message) {
 	for _, msg := range msgs {
 		ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), msg)
-		logger.Log.Debug(ctx, "Start apply Msg")
+		logger.Log.Debug(ctx, execCtx.WorkCtx.BusinassName, "Start apply Msg")
 	}
 }
 
@@ -83,19 +83,20 @@ func (r *ActionRouter) UpdateCtx(msgs []*scommon.Message, ctx *ExecutionContext,
 	ctx.traceCtx.SpanName = MethodName(action)
 	ctx.WorkCtx.BusinassName = r.bussnessname
 
-	maxHeight := uint64(0)
-	foundIdx := 0
-	for i := range msgs {
-		if msgs[i].Height > maxHeight {
-			foundIdx = i
-			maxHeight = msgs[i].Height
-		}
+	var primaryMsg *scommon.Message
+	if len(msgs) > 1 {
+		primaryMsg = PickPrimaryMsg(msgs, ctx.actor.primaryMsg)
+	} else {
+		primaryMsg = msgs[0]
 	}
 
-	ctx.traceCtx.TraceID = msgs[foundIdx].TraceID
+	if primaryMsg.Height > 0 {
+		ctx.WorkCtx.Height = primaryMsg.Height
+	}
+	ctx.traceCtx.TraceID = primaryMsg.TraceID
+
 	ctx.traceCtx.ParentID = NewAggregationParent(msgs)
-	ctx.WorkCtx.Height = msgs[foundIdx].Height
-	ctx.traceCtx.ReqID = msgs[foundIdx].ReqID
+
 	ctx.WorkCtx.NodeIdx = r.nodeIdx
 	return ctx
 }

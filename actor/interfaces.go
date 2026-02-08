@@ -9,7 +9,6 @@ type Business interface {
 	Inputs() ([]string, bool)
 	Outputs() map[string]int
 	RegisterActions(reg ActionRegistrar)
-	// BusinessInfo() string
 }
 
 type Gateable interface {
@@ -26,6 +25,10 @@ type RpcConfigurable interface {
 
 type Initializer interface {
 	InitMsgs() []*scommon.Message
+}
+
+type PickPrimary interface {
+	PrimaryMsg() string
 }
 
 // ---------------------------------------------

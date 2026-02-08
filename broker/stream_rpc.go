@@ -63,7 +63,7 @@ func (l *RpcCompletionListener) Notify(item interface{}) {
 	if !ok {
 		return
 	}
-
+	// log.Printf("[Rpc] RpcCompletionListener buffer niotify -- MsdId:%v", comp.ID)
 	l.coordinator.DeliverCompletion(comp)
 }
 
@@ -101,11 +101,17 @@ func NewRPCController(actor RPCActor, stream *StatefulStreamer, bufSize int) *RP
 	rc.ensureStreamBuffer(rc.respChanName, bufSize)
 
 	// register the reply listener on the global reply buffer
+	// if buf, ok := rc.stream.buffers[rc.respChanName]; ok {
+	// 	buf.RegisterListener(&RpcCompletionListener{coordinator: rc})
+	// }
+
+	return rc
+}
+func (rc *RPCController) RegisterGlobalReplyListener() {
+	// register the reply listener on the global reply buffer
 	if buf, ok := rc.stream.buffers[rc.respChanName]; ok {
 		buf.RegisterListener(&RpcCompletionListener{coordinator: rc})
 	}
-
-	return rc
 }
 
 // ensureStreamBuffer ensures that stream.buffers[name] exists and has started Serve()
@@ -145,14 +151,14 @@ func (rc *RPCController) Notify(name string, data interface{}) {
 	// Supports directly passing in *RPCRequest
 	req, ok := data.(*RPCInvocation)
 	if !ok {
-		logger.Log.Warn(context.Background(), "Received data is not RPCInvocation")
+		logger.Log.Warn(context.Background(), "RPCController", "Received data is not RPCInvocation")
 		return
 	}
 	// If the caller does not specify ReplyTo, use the global reply channel
 	if req.ReplyTo == "" {
 		req.ReplyTo = rc.respChanName
 	}
-
+	// log.Printf("[Rpc] RPCController received -- MsdId:%v", req.ID)
 	// ensure the reply buffer exists (safety; probably already ensured in NewRPCController)
 	rc.ensureStreamBuffer(req.ReplyTo, 1)
 	rc.reqChan <- req
@@ -161,7 +167,7 @@ func (rc *RPCController) Notify(name string, data interface{}) {
 // Serve processes requests from the request queue, passes them to the actor, and sends the response back to the reply buffer
 func (rc *RPCController) Serve() {
 	for inv := range rc.reqChan {
-		log.Printf("Serve got invocation %s %s", inv.ID, inv.Method)
+		// log.Printf("Serve got invocation %s %s", inv.ID, inv.Method)
 
 		rc.actor.Consume(inv)
 	}
@@ -179,9 +185,12 @@ func (rc *RPCController) GetActor() Actor {
 
 func (rc *RPCController) DeliverCompletion(comp *RPCCompletion) {
 	rc.pendingLock.Lock()
+	// log.Printf("[Rpc] RPCController DeliverCompletion -- MsdId:%v", comp.ID)
 	waiter, ok := rc.completionWaiters[comp.ID]
 	if ok {
 		delete(rc.completionWaiters, comp.ID)
+	} else {
+		log.Printf("[RPC][DROP] completion id=%s no waiter", comp.ID)
 	}
 	rc.pendingLock.Unlock()
 
@@ -223,6 +232,7 @@ func (rc *RPCController) Invoke(
 	rc.pendingLock.Lock()
 	rc.completionWaiters[reqID] = waiter
 	rc.pendingLock.Unlock()
+	// log.Printf("[Rpc] sync client RegisterContinuation -- MsdId:%v", reqID)
 
 	rc.ensureStreamBuffer(rc.respChanName, 1)
 

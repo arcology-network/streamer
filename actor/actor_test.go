@@ -50,28 +50,29 @@ func (a *BusinessConjunction) Inputs() ([]string, bool) {
 func (a *BusinessConjunction) Outputs() map[string]int {
 	return map[string]int{}
 }
+func (a *BusinessConjunction) PrimaryMsg() string {
+	return "msgA"
+}
 
 func TestHeightFsmConjunction(t *testing.T) {
-	a := NewBusinessConjunction()
+	logger.InitLog("./log.toml", "")
+	rpc.InitGlobalRPCFactory()
 	ss := broker.NewStatefulStreamer()
+	rpc.InitGlobalRPCClient(ss, 10, 60)
 
+	concurrency := runtime.NumCPU()
 	businessname := "businessConjunction"
+	a := NewBusinessConjunction()
+	act := CreateActor(businessname, ss, []Business{a}, []string{businessname}, concurrency, []string{""})
 
-	router := NewActionRouter(businessname, 0)
-	controllers := make([]Controller, 0, 2)
-	node := NewControlledNode(a, controllers, businessname, 0)
-	chain := NewBusinessChain([]*ControlledNode{node}, []*Filter{})
-	a.RegisterActions(router)
+	ss.Serve()
 
 	msgs := []*scommon.Message{
 		{Name: "msgA", Height: 2},
 		{Name: "msgB", Height: 2},
 	}
 
-	var err error
-	execCtx := NewExecutionContext("commonTest", "commonTest.rpc.complete", ss, 8)
-
-	err = chain.OnMessages(msgs, execCtx)
+	err := act.chain.OnMessages(msgs, act.execCtx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -136,20 +137,20 @@ func (a *BusinessDisConjunction) exec_msgA_msgB(ctx *ActionContext) error {
 func (a *BusinessDisConjunction) RPC_internal_Test(ctx *ActionContext) error {
 	ctx.ExecCtx.LogDebug("RPC_internal_Test Action executed", logger.F("request", ctx.RPC.Request))
 	ctx.ExecCtx.SendRpcResponse("", fmt.Sprintf("%v Tom,I am internal rpc server", ctx.RPC.Request))
-	logger.Log.Debug(context.Background(), "startRpc", logger.F("reqID", ctx.Messages[0].ReqID))
+	logger.Log.Debug(context.Background(), "actorTest", "startRpc", logger.F("reqID", ctx.Messages[0].ReqID))
 	a.execCounter++
 	return nil
 }
 
 func (a *BusinessDisConjunction) externalCasecadeLine1(ctx *ActionContext) error {
 	ctx.ExecCtx.LogDebug("externalCasecadeLine1RPC_internal_Test Action executed", logger.F("request", ctx.RPC.Request))
-	ctx.ExecCtx.StartCasecade()
+	// ctx.ExecCtx.StartCasecade()
 	ctx.ExecCtx.InvokeRPC("collection", "externalCasecadeLine1", fmt.Sprintf("%v -- collection", ctx.RPC.Request), "externalCasecadeLine1_resp")
 	return nil
 }
 
 func (a *BusinessDisConjunction) externalCasecadeLine1_resp(ctx *ActionContext) error {
-	ctx.ExecCtx.EndCasecade()
+	// ctx.ExecCtx.EndCasecade()
 	ctx.ExecCtx.SendRpcResponse("", fmt.Sprintf("%v -- sender", ctx.RPC.Request))
 	return nil
 }
@@ -216,7 +217,7 @@ func (a *BusinessCollect) RegisterActions(reg ActionRegistrar) {
 }
 
 func (a *BusinessCollect) exec_msgD(ctx *ActionContext) error {
-	logger.Log.Debug(context.Background(), "startRpc", logger.F("data", ctx.Messages[0].Data), logger.F("reqID", ctx.Messages[0].ReqID))
+	logger.Log.Debug(context.Background(), "actorTest", "startRpc", logger.F("data", ctx.Messages[0].Data), logger.F("reqID", ctx.Messages[0].ReqID))
 	ctx.ExecCtx.Send("msgE", fmt.Sprintf("%v clol ", ctx.Messages[0].Data))
 	return nil
 }
@@ -274,22 +275,22 @@ func (a *BusinessSender) RegisterActions(reg ActionRegistrar) {
 }
 
 func (a *BusinessSender) externalrpccasecade(ctx *ActionContext) error {
-	ctx.ExecCtx.StartCasecade()
+	// ctx.ExecCtx.StartCasecade()
 	ctx.ExecCtx.InvokeRPC("business", "externalCasecadeLine2", "line2:sender -- business", "externalrpccasecade_next")
 	return nil
 }
 
 func (a *BusinessSender) externalrpccasecade_next(ctx *ActionContext) error {
-	logger.Log.Debug(context.Background(), "externalrpccasecade line 2", logger.F("ret", ctx.RPC.Request))
+	logger.Log.Debug(context.Background(), "actorTest", "externalrpccasecade line 2", logger.F("ret", ctx.RPC.Request))
 	a.line2 = ctx.RPC.Request.(string)
 	ctx.ExecCtx.InvokeRPC("business", "externalCasecadeLine1", "line1:sender -- business", "externalrpccasecade_resp")
 	return nil
 }
 
 func (a *BusinessSender) externalrpccasecade_resp(ctx *ActionContext) error {
-	logger.Log.Debug(context.Background(), "externalrpccasecade line 1", logger.F("ret", ctx.RPC.Request))
+	logger.Log.Debug(context.Background(), "actorTest", "externalrpccasecade line 1", logger.F("ret", ctx.RPC.Request))
 	a.line1 = ctx.RPC.Request.(string)
-	ctx.ExecCtx.EndCasecade()
+	// ctx.ExecCtx.EndCasecade()
 	ctx.ExecCtx.SendRpcResponse("", fmt.Sprintf("%v     %v ", a.line1, a.line2))
 	return nil
 }
@@ -314,7 +315,7 @@ func (a *BusinessSender) internalrpc(ctx *ActionContext) error {
 }
 
 func (a *BusinessSender) internalrpc_resp(ctx *ActionContext) error {
-	logger.Log.Debug(context.Background(), "internalrpc_resp return", logger.F("ret", ctx.RPC.Request))
+	logger.Log.Debug(context.Background(), "actorTest", "internalrpc_resp return", logger.F("ret", ctx.RPC.Request))
 	return nil
 }
 
@@ -338,17 +339,17 @@ func (a *BusinessSender) send(ss *broker.StatefulStreamer) {
 
 	//sync
 	ret, _ := a.sender.SendSync("sender", "externalrpc", "hello", 10)
-	logger.Log.Debug(context.Background(), "internalrpc_resp return", logger.F("ret", ret))
+	logger.Log.Debug(context.Background(), "****actorTest", "externalrpc_resp return", logger.F("ret", ret))
 	time.Sleep(1 * time.Second)
 
-	//sync to async
+	// //sync to async
 	ret, _ = a.sender.SendSync("sender", "externalrpcToAsync", "hello", 10)
-	logger.Log.Debug(context.Background(), "externalrpcToAsync return", logger.F("ret", ret))
+	logger.Log.Debug(context.Background(), "****actorTest", "externalrpcToAsync return", logger.F("ret", ret))
 	time.Sleep(1 * time.Second)
 
-	//casecade
+	// //casecade
 	ret, _ = a.sender.SendSync("sender", "externalrpccasecade", "hello", 10)
-	logger.Log.Debug(context.Background(), "externalrpccasecade return", logger.F("ret", ret))
+	logger.Log.Debug(context.Background(), "****actorTest", "externalrpccasecade return", logger.F("ret", ret))
 	time.Sleep(1 * time.Second)
 }
 
@@ -377,6 +378,7 @@ rpc casecade
 	                                           -->business.externalCasecadeLine1   -->Collect.externalCasecadeLine1
 */
 func TestActorRpcController(t *testing.T) {
+	logger.InitLog("./log.toml", "")
 	rpc.InitGlobalRPCFactory()
 	ss := broker.NewStatefulStreamer()
 	rpc.InitGlobalRPCClient(ss, 10, 60)
@@ -389,14 +391,15 @@ func TestActorRpcController(t *testing.T) {
 	concurrency := runtime.NumCPU()
 
 	a := NewBusinessDisConjunction()
-	CreateActor("BusinessDisConjunction", ss, []Business{a}, []string{"businessDisConjunction"}, []*Filter{filter}, concurrency)
+	act := CreateActor("BusinessDisConjunction", ss, []Business{a}, []string{"businessDisConjunction"}, concurrency, []string{""})
+	act.SetFilters([]*Filter{filter})
 
 	b := NewBusinessSender()
 	b.SetSender(NewSendAdaptor(ss, rpc.GlobalRPCClient))
-	CreateActor("sender", ss, []Business{b}, []string{"businessSender"}, []*Filter{}, concurrency)
+	CreateActor("sender", ss, []Business{b}, []string{"businessSender"}, concurrency, []string{""})
 
 	c := NewBusinessCollect()
-	CreateActor("collect", ss, []Business{c}, []string{"businessCollect"}, []*Filter{}, concurrency)
+	CreateActor("collect", ss, []Business{c}, []string{"businessCollect"}, concurrency, []string{""})
 
 	ss.Serve()
 

@@ -12,25 +12,27 @@ import (
 type DefaultContinuation struct {
 	stream    *broker.StatefulStreamer
 	once      sync.Once
-	reqMsg    *scommon.Message
+	callfram  *CallFrame
 	actorname string
 }
 
-func NewDefaultContinuation(stream *broker.StatefulStreamer, actorname string, reqMsg *scommon.Message) Continuation {
+func NewDefaultContinuation(stream *broker.StatefulStreamer, actorname string, callfram *CallFrame) Continuation {
 	return &DefaultContinuation{
 		stream:    stream,
 		actorname: actorname,
-		reqMsg:    reqMsg,
+		callfram:  callfram,
 	}
 }
 
 func (c *DefaultContinuation) Resume(comp *broker.RPCCompletion) {
 	c.once.Do(func() {
 		respmsg := comp.Payload.(*scommon.Message)
-		resp := scommon.NewMessageForRPCRESP(c.reqMsg, respmsg.Error, respmsg.Data)
-		// resp.Service = resp.ReplyTo
+		resp := scommon.NewMessageForRPCRESP(c.callfram.ReqMsg, respmsg.Error, respmsg.Data)
+		resp.WithRpcTrace(c.callfram.ReqID)
+
 		ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), resp)
-		logger.Log.Debug(ctx, c.actorname+" send rpc response")
+		logger.Log.Debug(ctx, c.actorname, "Continuation send rpc response")
+
 		comp.Payload = resp
 		c.stream.Send(resp.ReplyTo, comp)
 	})
@@ -40,7 +42,7 @@ func (c *DefaultContinuation) Cancel(err error) {
 	c.once.Do(func() {
 		// Construct a failed RPC response message
 		resp := scommon.NewMessageForRPCRESP(
-			c.reqMsg,
+			c.callfram.ReqMsg,
 			err.Error(),
 			nil,
 		)
@@ -48,12 +50,12 @@ func (c *DefaultContinuation) Cancel(err error) {
 		ctx := scommon.BindLoggerContextFromMessageSafe(context.Background(), resp)
 		logger.Log.Error(
 			ctx,
-			c.actorname+" rpc canceled",
+			c.actorname, "rpc canceled",
 			logger.F("err", err.Error()),
 		)
 
 		comp := &broker.RPCCompletion{
-			ID:      c.reqMsg.ReqID,
+			ID:      c.callfram.ReqID,
 			Payload: resp,
 			Error:   err.Error(),
 		}
@@ -68,16 +70,19 @@ type ContinuationNext struct {
 	Step    string // nextStep
 	Payload any
 	Error   string // Optional
+	Frame   *CallFrame
 }
 
 type BusinessContinuation struct {
-	actor *Actor
-	once  sync.Once
+	actor     *Actor
+	once      sync.Once
+	callframe *CallFrame
 }
 
-func NewBusinessContinuation(actor *Actor) Continuation {
+func NewBusinessContinuation(actor *Actor, callframe *CallFrame) Continuation {
 	return &BusinessContinuation{
-		actor: actor,
+		actor:     actor,
+		callframe: callframe,
 	}
 }
 
@@ -90,6 +95,7 @@ func (c *BusinessContinuation) Resume(comp *broker.RPCCompletion) {
 			Step:    msg.NextStep,
 			Payload: msg,
 			Error:   msg.Error,
+			Frame:   c.callframe,
 		}
 
 		c.actor.Consume(next)

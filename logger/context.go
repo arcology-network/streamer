@@ -11,7 +11,7 @@ type TraceContext struct {
 	SpanID   string
 	ParentID string
 	SpanName string
-	ReqID    string
+	// ReqID    string
 }
 
 type MsgContext struct {
@@ -22,6 +22,8 @@ type MsgContext struct {
 	Redeliver int
 	Height    uint64
 	From      string
+	Method    string
+	ReqID     string
 }
 
 const (

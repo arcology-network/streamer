@@ -39,6 +39,7 @@ type Message struct {
 	Error    string
 	ReqID    string // Used for synchronous to asynchronous scenarios.
 	NextStep string // For next Step
+	ContId   string // For rpc query
 
 	// ===== Stream Processing Control =====
 	Sequence  uint64 // JetStream sequence
@@ -91,12 +92,13 @@ func NewMessageForRPCRESP(req *Message, errMsg string, respPayload any) *Message
 		ReplyTo:   req.ReplyTo,
 		ReqID:     req.ReqID,
 		NextStep:  req.NextStep,
+		ContId:    req.ContId,
 		Key:       req.Key,
 		Error:     errMsg,
 		Data:      respPayload,
 	}
 }
-func (m *Message) StartRpcTrace(requestID string) {
+func (m *Message) WithRpcTrace(requestID string) {
 	m.ReqID = requestID
 }
 func (m *Message) GetTrace() (TraceId string, ParentId string) {
@@ -124,6 +126,8 @@ func (m *Message) DeepCopy() *Message {
 		Method:    m.Method,
 		ReplyTo:   m.ReplyTo,
 		Error:     m.Error,
+		ReqID:     m.ReqID,
+		NextStep:  m.NextStep,
 		Sequence:  m.Sequence,
 		Redeliver: m.Redeliver,
 		Key:       m.Key,
@@ -223,7 +227,6 @@ func BindLoggerContextFromMessageSafe(
 		SpanID:   spanID,
 		ParentID: parentID,
 		SpanName: msg.SpanName,
-		ReqID:    msg.ReqID,
 	})
 
 	// -------- Message Meta fallback --------
@@ -240,6 +243,8 @@ func BindLoggerContextFromMessageSafe(
 		Redeliver: msg.Redeliver,
 		Height:    msg.Height,
 		From:      msg.From,
+		Method:    msg.Method,
+		ReqID:     msg.ReqID,
 	})
 
 	return ctx
