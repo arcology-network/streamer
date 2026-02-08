@@ -43,16 +43,16 @@ func (r *Renamer) To(to string) *Renamer {
 	return r
 }
 
-func (r *Renamer) On(broker *brokerpk.StatefulStreamer) *Renamer {
-	CreateActor(
+func (r *Renamer) On(broker *brokerpk.StatefulStreamer) (Business, *Actor) {
+	act := CreateActor(
 		RenamerName(r.from, r.to),
 		broker,
 		[]Business{r},
 		[]string{"renamer"},
-		[]*Filter{},
 		2,
+		[]string{""},
 	)
-	return r
+	return r, act
 }
 
 func (r *Renamer) Inputs() ([]string, bool) {
@@ -63,9 +63,6 @@ func (r *Renamer) Outputs() map[string]int {
 	return map[string]int{
 		r.to: 1,
 	}
-}
-func (r *Renamer) RpcConfig() (string, int) {
-	return "", 0
 }
 
 func (r *Renamer) Config(params map[string]interface{}) {

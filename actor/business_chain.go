@@ -9,11 +9,15 @@ type BusinessChain struct {
 	filters []*Filter // Pre-Filter（chain-level）
 }
 
-func NewBusinessChain(nodes []*ControlledNode, filters []*Filter) *BusinessChain {
+func NewBusinessChain(nodes []*ControlledNode) *BusinessChain {
 	return &BusinessChain{
-		nodes:   nodes,
-		filters: filters,
+		nodes: nodes,
+		// filters: filters,
 	}
+}
+
+func (c *BusinessChain) SetFilters(filters []*Filter) {
+	c.filters = filters
 }
 
 func (c *BusinessChain) GetNode(idx int) *ControlledNode {
