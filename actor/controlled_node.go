@@ -148,12 +148,21 @@ func (n *ControlledNode) StartRPC(
 	execCtx *ExecutionContext,
 ) error {
 	// not controller
-	return n.router.Dispatch(
+	err := n.router.Dispatch(
 		method,
 		msgs,
 		rpcCtx,
 		execCtx,
 	)
+	if err != nil {
+		return err
+	}
+	//After execution, changes in the state or height will cause new eligible messages to pop up
+	popMsg, err := n.AfterExecute()
+	if err != nil {
+		return err
+	}
+	return n.Handle(popMsg, execCtx)
 }
 
 func (n *ControlledNode) Validate() error {
