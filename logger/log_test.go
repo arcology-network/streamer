@@ -6,6 +6,7 @@ import (
 )
 
 func TestLogger(t *testing.T) {
+	InitLog("./log.toml", "")
 	log := Log
 
 	ctx := context.Background()
@@ -24,25 +25,25 @@ func TestLogger(t *testing.T) {
 		Redeliver: 1,
 	})
 
-	log.Debug(ctx, "order_failed",
+	log.Debug(ctx, "loggertest", "order_failed",
 		F("order_id", 8899),
 		F("cost_ms", 32),
 		F("error", "out of stock"),
 	)
 
-	log.Info(ctx, "order_failed",
+	log.Info(ctx, "loggertest", "order_failed",
 		F("order_id", 8899),
 		F("cost_ms", 32),
 		F("error", "out of stock"),
 	)
 
-	log.Warn(ctx, "order_failed",
+	log.Warn(ctx, "loggertest", "order_failed",
 		F("order_id", 8899),
 		F("cost_ms", 32),
 		F("error", "out of stock"),
 	)
 
-	log.Error(ctx, "order_failed",
+	log.Error(ctx, "loggertest", "order_failed",
 		F("order_id", 8899),
 		F("cost_ms", 32),
 		F("error", "out of stock"),

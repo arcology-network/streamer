@@ -1,9 +1,10 @@
 package actor
 
 import (
-	"fmt"
+	"context"
 
 	scommon "github.com/arcology-network/streamer/common"
+	"github.com/arcology-network/streamer/logger"
 )
 
 type HeightSensitive interface {
@@ -11,14 +12,16 @@ type HeightSensitive interface {
 }
 
 type HeightController struct {
-	client HeightSensitive
-	buf    *MsgBuffer
+	client       HeightSensitive
+	buf          *MsgBuffer
+	businessName string
 }
 
-func NewHeightController(client HeightSensitive) *HeightController {
+func NewHeightController(client HeightSensitive, businessName string) *HeightController {
 	return &HeightController{
-		client: client,
-		buf:    NewMsgBuffer(),
+		client:       client,
+		buf:          NewMsgBuffer(),
+		businessName: businessName,
 	}
 }
 
@@ -28,14 +31,18 @@ func (c *HeightController) OnMessage(msg *scommon.Message) ([]*scommon.Message, 
 	}
 
 	c.buf.Put(msg)
-	fmt.Printf("HC: Push name=%s height=%d\n", msg.Name, msg.Height)
+
+	logger.Log.Debug(context.Background(), c.businessName, "HC: Push", logger.F("msg", msg.Name), logger.F("msgheight", msg.Height))
 	return nil, nil
 }
 
 // Attempt to release messages in the cache that meet the height requirement
 func (c *HeightController) OnAfterExecute() ([]*scommon.Message, error) {
-	if msg := c.buf.PopByHeight(c.client.Height()); msg != nil {
-		fmt.Printf("HC: Pop name=%s height=%d\n", msg.Name, msg.Height)
+	height := c.client.Height()
+	logger.Log.Debug(context.Background(), c.businessName, "HC Status", logger.F("height", height))
+	if msg := c.buf.PopByHeight(height); msg != nil {
+
+		logger.Log.Debug(context.Background(), c.businessName, "HC: Pop", logger.F("msg", msg.Name), logger.F("msgheight", msg.Height))
 		return []*scommon.Message{msg}, nil
 	}
 	return nil, nil

@@ -1,9 +1,10 @@
 package actor
 
 import (
-	"fmt"
+	"context"
 
 	scommon "github.com/arcology-network/streamer/common"
+	"github.com/arcology-network/streamer/logger"
 )
 
 type FSMRule struct {
@@ -20,13 +21,16 @@ type FSMController struct {
 	rules        map[int]FSMRule
 	universalSet map[string]struct{}
 	buf          *MsgBuffer
+
+	businessName string
 }
 
-func NewFSMController(client FSMCompatible) *FSMController {
+func NewFSMController(client FSMCompatible, businessName string) *FSMController {
 	ctrl := &FSMController{
-		client: client,
-		rules:  client.GetFSMRules(),
-		buf:    NewMsgBuffer(),
+		client:       client,
+		rules:        client.GetFSMRules(),
+		buf:          NewMsgBuffer(),
+		businessName: businessName,
 	}
 
 	ctrl.universalSet = make(map[string]struct{})
@@ -53,15 +57,19 @@ func (c *FSMController) OnMessage(msg *scommon.Message) ([]*scommon.Message, err
 	}
 
 	c.buf.Put(msg)
-	fmt.Printf("FSM: Push %s\n", msg.Name)
+
+	logger.Log.Debug(context.Background(), c.businessName, "FSM Push", logger.F("msg", msg.Name), logger.F("state", state))
 	return nil, nil
 }
 func (c *FSMController) OnAfterExecute() ([]*scommon.Message, error) {
 	state := c.client.GetCurrentState()
 	rule := c.rules[state]
 
+	logger.Log.Debug(context.Background(), c.businessName, "FSM Status", logger.F("state", state), logger.F("accept", rule))
+
 	if msg := c.buf.PopByNames(rule.Accept); msg != nil {
-		fmt.Printf("FSM: Pop %s (state=%d)\n", msg.Name, state)
+
+		logger.Log.Debug(context.Background(), c.businessName, "FSM Pop", logger.F("msg", msg.Name), logger.F("state", state))
 		return []*scommon.Message{msg}, nil
 	}
 	return nil, nil
