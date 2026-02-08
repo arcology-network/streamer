@@ -15,8 +15,8 @@ type Sendable interface {
 }
 
 type OutboundSender interface {
-	Send(name string, data interface{}, height uint64)
-	SendSync(serverName, methodName string, payload interface{}, height uint64) (respPayload interface{}, err error)
+	Send(name string, data interface{}, height uint64, args ...string)
+	SendSync(serverName, methodName string, payload interface{}, height uint64, args ...string) (respPayload interface{}, err error)
 }
 
 type SendAdaptor struct {
@@ -31,13 +31,23 @@ func NewSendAdaptor(msgsender *broker.StatefulStreamer, rpcsender *rpc.RPCClient
 	}
 }
 
-func (s *SendAdaptor) SendSync(serverName, methodName string, payload interface{}, height uint64) (respPayload interface{}, err error) {
+func (s *SendAdaptor) SendSync(serverName, methodName string, payload interface{}, height uint64, args ...string) (respPayload interface{}, err error) {
 	allServerName := "rpc." + serverName
 	msg := scommon.NewMessageForRPCREQ(allServerName, methodName, payload)
-	msg.StartRpcTrace(msg.ID)
+	msg.WithRpcTrace(msg.ID)
+
+	// log.Printf("[Rpc] SendAdaptor SendSync -- MsdId:%v", msg.ID)
+
+	m := ""
+	for i := range args {
+		if i == 0 {
+			msg.From = args[i]
+			m = args[i]
+		}
+	}
 	msg.Height = height
 	ctxlog := scommon.BindLoggerContextFromMessageSafe(context.Background(), msg)
-	logger.Log.Debug(ctxlog, "Send rpc Msg from external")
+	logger.Log.Debug(ctxlog, m, "Send rpc Msg from external")
 
 	resp, err := s.rpcCaller.SyncCall(allServerName, methodName, msg.ID, msg, rpc.RpcTimeout)
 	if err != nil {
@@ -45,12 +55,20 @@ func (s *SendAdaptor) SendSync(serverName, methodName string, payload interface{
 	}
 	return resp.Payload.(*scommon.Message).Data, nil
 }
-func (s *SendAdaptor) Send(name string, data interface{}, height uint64) {
+func (s *SendAdaptor) Send(name string, data interface{}, height uint64, args ...string) {
 	msg := scommon.NewMessageForStream(name, data)
 	msg.Height = height
 	msg.ReqID = uuid.NewString()
+	m := ""
+	for i := range args {
+		if i == 0 {
+			msg.From = args[i]
+			m = args[i]
+		}
+	}
+
 	s.msgSender.Send(name, msg)
 
 	ctxlog := scommon.BindLoggerContextFromMessageSafe(context.Background(), msg)
-	logger.Log.Debug(ctxlog, "Send Msg from external")
+	logger.Log.Debug(ctxlog, m, "Send Msg from external")
 }
