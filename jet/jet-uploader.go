@@ -10,13 +10,11 @@ type KafkaUploader struct {
 }
 
 // return a Subscriber struct
-func NewKafkaUploader(stream *jetlib.JetKVStreamer) *KafkaUploader {
+func NewKafkaUploader(stream *jetlib.JetKVStreamer) actor.Business {
 	uploader := KafkaUploader{}
 	return &uploader
 }
-func (ku *KafkaUploader) RpcConfig() (string, int) {
-	return "", 0
-}
+
 func (ku *KafkaUploader) Inputs() ([]string, bool) {
 	baseTopics := ku.stream.GetConfig().TopicsU
 	inputs := make([]string, len(baseTopics))
@@ -31,11 +29,15 @@ func (ku *KafkaUploader) Outputs() map[string]int {
 	return map[string]int{}
 }
 
-func (ku *KafkaUploader) OnStart() {
-}
+func (ku *KafkaUploader) RegisterActions(reg actor.ActionRegistrar) {
+	inputs, _ := ku.Inputs()
+	for _, input := range inputs {
+		reg.Register(input, ku.OnMessageArrived)
+	}
 
-func (ku *KafkaUploader) OnMessageArrived(msgs []*actor.Message) error {
-	// ku.outgoing.Send(msgs[0])
-	// ku.stream.Send("", msgs[0])
+}
+func (ku *KafkaUploader) OnMessageArrived(ctx *actor.ActionContext) error {
+	msg := ctx.Messages[0]
+	ku.stream.Send(msg.Name, msg)
 	return nil
 }

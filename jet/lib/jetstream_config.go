@@ -66,6 +66,11 @@ type JetStreamConfig struct {
 	TopicsU []string `yaml:"topics_u"`
 }
 
+func (jsc *JetStreamConfig) Contain(topic string) bool {
+	_, ok := jsc.TopicsD[topic]
+	return ok
+}
+
 // ---------------- load config -----------------
 func LoadConfig(path string) (*JetStreamConfig, error) {
 	data, err := ioutil.ReadFile(path)
