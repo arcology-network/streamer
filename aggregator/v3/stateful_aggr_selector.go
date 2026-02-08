@@ -18,13 +18,11 @@
 package aggregator
 
 import (
-	"context"
 	"fmt"
 	"math"
 
 	"github.com/arcology-network/streamer/actor"
 	scommon "github.com/arcology-network/streamer/common"
-	"github.com/arcology-network/streamer/logger"
 )
 
 const (
@@ -82,7 +80,7 @@ func (aggr *StatefulAggrSelector) ReceivedData(ctx *actor.ActionContext) error {
 	case aggrStateCollecting:
 		if aggr.onDataReceived(msg, ctx.ExecCtx) {
 			aggr.state = aggrStateDone
-			logger.Log.Debug(context.Background(), "[StatefulAggrSelector] data received, switch to aggrStateDone")
+			ctx.ExecCtx.LogDebug("[StatefulAggrSelector] data received, switch to aggrStateDone")
 		}
 	}
 	return nil
@@ -92,10 +90,10 @@ func (aggr *StatefulAggrSelector) ReceivedList(ctx *actor.ActionContext) error {
 	msg := ctx.Messages[0]
 	if aggr.onListReceived(msg, ctx.ExecCtx) {
 		aggr.state = aggrStateDone
-		logger.Log.Debug(context.Background(), "[StatefulAggrSelector] list received, switch to aggrStateDone")
+		ctx.ExecCtx.LogDebug("[StatefulAggrSelector] list received, switch to aggrStateDone")
 	} else {
 		aggr.state = aggrStateCollecting
-		logger.Log.Debug(context.Background(), "[StatefulAggrSelector] list received, switch to aggrStateCollecting")
+		ctx.ExecCtx.LogDebug("[StatefulAggrSelector] list received, switch to aggrStateCollecting")
 	}
 	return nil
 }
@@ -105,7 +103,7 @@ func (aggr *StatefulAggrSelector) ReceivedClearCommand(ctx *actor.ActionContext)
 	aggr.ds.Clear(msg.Height)
 	aggr.state = aggrStateInit
 	aggr.height = msg.Height + 1
-	logger.Log.Debug(context.Background(), fmt.Sprintf("[StatefulAggrSelector] clear on height %d", msg.Height))
+	ctx.ExecCtx.LogDebug(fmt.Sprintf("[StatefulAggrSelector] clear on height %d", msg.Height))
 	return nil
 }
 

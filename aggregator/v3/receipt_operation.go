@@ -136,12 +136,12 @@ func ParseData(datas []byte) ([]evmCommon.Hash, []byte) {
 type ReceiptOperation struct{}
 
 func (op *ReceiptOperation) GetData(msg *scommon.Message) (hashes []evmCommon.Hash, data []interface{}) {
-	receipts := msg.Data.(*[]*ethTypes.Receipt)
+	receipts := msg.Data.([]*ethTypes.Receipt)
 	if receipts == nil {
 		return
 	}
 
-	for _, receipt := range *receipts {
+	for _, receipt := range receipts {
 		hashes = append(hashes, receipt.TxHash)
 		data = append(data, receipt)
 	}
@@ -158,11 +158,11 @@ func (op *ReceiptOperation) OnListFulfilled(data []interface{}, broker *actor.Ex
 	for _, item := range data {
 		receipts = append(receipts, item.(*ethTypes.Receipt))
 	}
-	broker.Send(actor.MsgSelectedReceipts, PostProcess(receipts))
+	broker.Send(scommon.MsgSelectedReceipts, PostProcess(receipts))
 }
 
 func (op *ReceiptOperation) Outputs() map[string]int {
-	return map[string]int{actor.MsgSelectedReceipts: 1}
+	return map[string]int{scommon.MsgSelectedReceipts: 1}
 }
 
 func (op *ReceiptOperation) Config(params map[string]interface{}) {}

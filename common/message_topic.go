@@ -98,4 +98,6 @@ const (
 
 	MsgRpcHash        = "rpchash"
 	MsgExecGeneration = "execGeneration"
+
+	MsgInitScheduletate = "initScheduleState"
 )

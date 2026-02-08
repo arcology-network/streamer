@@ -57,11 +57,11 @@ func (op *ReceiptHashOperation) OnListFulfilled(data []interface{}, broker *acto
 		rh := data[i].(*types.ReceiptHash)
 		receipts[*rh.Txhash] = rh
 	}
-	broker.Send(actor.MsgSelectedReceiptsHash, &receipts)
+	broker.Send(scommon.MsgSelectedReceiptsHash, &receipts)
 }
 
 func (op *ReceiptHashOperation) Outputs() map[string]int {
-	return map[string]int{actor.MsgSelectedReceiptsHash: 1}
+	return map[string]int{scommon.MsgSelectedReceiptsHash: 1}
 }
 
 func (op *ReceiptHashOperation) Config(params map[string]interface{}) {}

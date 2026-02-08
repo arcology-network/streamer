@@ -48,11 +48,11 @@ func (op *PrecedingListOperation) GetList(msg *scommon.Message) (hashes []evmCom
 }
 
 func (op *PrecedingListOperation) OnListFulfilled(data []interface{}, broker *actor.ExecutionContext) {
-	broker.Send(actor.MsgPrecedingsEuresult, data)
+	broker.Send(scommon.MsgPrecedingsEuresult, data)
 }
 
 func (op *PrecedingListOperation) Outputs() map[string]int {
-	return map[string]int{actor.MsgPrecedingsEuresult: 1}
+	return map[string]int{scommon.MsgPrecedingsEuresult: 1}
 }
 
 func (op *PrecedingListOperation) Config(params map[string]interface{}) {}

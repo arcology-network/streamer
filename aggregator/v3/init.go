@@ -19,42 +19,43 @@ package aggregator
 
 import (
 	"github.com/arcology-network/streamer/actor"
+	scommon "github.com/arcology-network/streamer/common"
 )
 
 func init() {
 	actor.Factory.Register("stateless_euresult_aggr_selector", func() actor.Business {
 		return NewAggrSelector(
 			"stateless_euresult_aggr_selector",
-			actor.MsgEuResults,
-			actor.MsgGenerationReapingList,
-			actor.MsgBlockEnd,
+			scommon.MsgEuResults,
+			scommon.MsgGenerationReapingList,
+			scommon.MsgBlockEnd,
 			&EuResultOperation{},
 		)
 	})
 	actor.Factory.Register("stateful_euresult_aggr_selector", func() actor.Business {
 		return NewStatefulAggrSelector(
 			"stateful_euresult_aggr_selector",
-			actor.MsgEuResults,
-			actor.MsgGenerationReapingList,
-			actor.MsgBlockEnd,
+			scommon.MsgEuResults,
+			scommon.MsgGenerationReapingList,
+			scommon.MsgBlockEnd,
 			&EuResultOperation{},
 		)
 	})
 	actor.Factory.Register("stateful_receipt_aggr_selector", func() actor.Business {
 		return NewStatefulAggrSelector(
 			"stateful_receipt_aggr_selector",
-			actor.MsgReceipts,
-			actor.MsgInclusive,
-			actor.MsgBlockCompleted,
+			scommon.MsgReceipts,
+			scommon.MsgInclusive,
+			scommon.MsgBlockCompleted,
 			&ReceiptOperation{},
 		)
 	})
 	actor.Factory.Register("stateful_receipt_hash_aggr_selector", func() actor.Business {
 		return NewStatefulAggrSelector(
 			"stateful_receipt_hash_aggr_selector",
-			actor.MsgReceiptHashList,
-			actor.MsgInclusive,
-			actor.MsgBlockCompleted,
+			scommon.MsgReceiptHashList,
+			scommon.MsgInclusive,
+			scommon.MsgBlockCompleted,
 			&ReceiptHashOperation{},
 		)
 	})
