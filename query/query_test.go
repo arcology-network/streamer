@@ -11,7 +11,6 @@ func TestQueryPlan_ParallelMergeWithRetry(t *testing.T) {
 	scheduler := &MockScheduler{}
 	observer := &MockObserver{}
 
-	// ---------- Step A：第一次失败，第二次成功 ----------
 	aAttempts := 0
 	stepA := &RpcStep{
 		Call: func(ctx *QueryContext, cont Continuation) {
@@ -29,7 +28,6 @@ func TestQueryPlan_ParallelMergeWithRetry(t *testing.T) {
 		MaxRetry: 1,
 	}
 
-	// ---------- Step B：直接成功 ----------
 	stepB := &RpcStep{
 		Call: func(ctx *QueryContext, cont Continuation) {
 			cont("B_OK", nil)
@@ -58,7 +56,6 @@ func TestQueryPlan_ParallelMergeWithRetry(t *testing.T) {
 		},
 	}
 
-	// ---------- 执行 ----------
 	var (
 		result interface{}
 		err    error
@@ -75,7 +72,6 @@ func TestQueryPlan_ParallelMergeWithRetry(t *testing.T) {
 		err = e
 	})
 
-	// ---------- 验证 ----------
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -98,7 +94,7 @@ func TestTimeoutStep(t *testing.T) {
 
 	step := &RpcStep{
 		Call: func(ctx *QueryContext, cont Continuation) {
-			// 永远不回调
+
 		},
 	}
 
@@ -121,7 +117,6 @@ func TestTimeoutStep(t *testing.T) {
 		err = e
 	})
 
-	// 触发定时器
 	scheduler.FireAll()
 
 	if err != ErrTimeout {

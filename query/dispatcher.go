@@ -33,21 +33,11 @@ func (d *Dispatcher) Query(
 		return
 	}
 
-	// ⭐ finalCont 只在这里注入一次
 	ctx := NewQueryContext(req, execCtx, obs, scheduler, func(resp interface{}, err error) {
-		// 清理 runtime 状态
-		// execCtx.SetLocal("query_ctx", nil)
 		cont(resp, err)
 	})
 
-	// 让业务 / RPC / SubPlan 能拿到当前 QueryContext
-	// execCtx.SetLocal("query_ctx", ctx)
-
-	// ctx.Ctx.StartCasecade()
-
-	// ⚠️ 这里只是“启动”，不是“结束”
 	plan.Start(ctx, func(resp interface{}, err error) {
-		// ⭐ 正常跑完，但没有提前 Return
 		if ctx.finished {
 			return
 		}

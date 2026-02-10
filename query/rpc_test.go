@@ -323,7 +323,7 @@ func (p *ReceiptQueryPlan) buildSteps() Step {
 								Do: func(ctx *QueryContext, cont Continuation) {
 									num := item.(int)
 									ctx.Vars["val"] = num + 5
-									cont(nil, nil) // ✅ 必须
+									cont(nil, nil)
 								},
 							},
 						},

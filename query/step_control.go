@@ -3,13 +3,12 @@ package query
 // ---------- Timeout ----------
 type TimeoutStep struct {
 	Inner   Step
-	Timeout uint64 // 逻辑时间 / tick
+	Timeout uint64
 }
 
 func (t *TimeoutStep) Start(ctx *QueryContext, cont Continuation) {
 	done := false
 
-	// 超时回调
 	ctx.Scheduler.ScheduleAfter(t.Timeout, func() {
 		if done || ctx.finished {
 			return
@@ -18,7 +17,6 @@ func (t *TimeoutStep) Start(ctx *QueryContext, cont Continuation) {
 		cont(nil, ErrTimeout)
 	})
 
-	// 正常执行 Inner
 	StartStep(ctx, t.Inner, func(resp interface{}, err error) {
 		if done || ctx.finished {
 			return

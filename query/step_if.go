@@ -3,7 +3,7 @@ package query
 type IfStep struct {
 	Cond func(ctx *QueryContext) bool
 	Then Step
-	Else Step // 可为 nil
+	Else Step
 }
 
 func (s *IfStep) Start(

@@ -19,17 +19,14 @@ func (s *ForEachStep) Start(
 	var run func(i int)
 	run = func(i int) {
 		if i >= len(items) {
-			// 所有 item 执行完
 			cont(nil, nil)
 			return
 		}
 
 		item := items[i]
 
-		// ⭐ 每个 item 使用独立子 ctx
 		subCtx := ctx.Fork()
 
-		// ⭐⭐⭐ 关键：监听 subCtx.Return
 		subCtx.OnReturn(func(v any, err error) {
 			if err != nil {
 				cont(nil, err)
@@ -51,17 +48,14 @@ func (s *ForEachStep) Start(
 				return
 			}
 
-			// ⚠️ 注意：如果已经 Return 过，这里应当 no-op
 			if subCtx.IsReturned() {
 				return
 			}
 
-			// ⭐⭐ 核心：合并结果
 			if s.Collect != nil {
 				s.Collect(ctx, item, subCtx)
 			}
 
-			// 继续下一个
 			run(i + 1)
 		})
 	}

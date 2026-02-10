@@ -2,7 +2,6 @@ package query
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 
@@ -15,29 +14,22 @@ var globalContID atomic.Uint64
 type Continuation func(resp interface{}, err error)
 
 type QueryContext struct {
-	// ---------- 输入 ----------
 	Req interface{}
 
-	// ---------- 执行控制 ----------
 	mu       sync.Mutex
-	finished bool // 是否已经 Return
-	failed   bool // 是否已经 Fail
+	finished bool
+	failed   bool
 
-	// Plan 级最终 continuation（return 用）
 	finalCont Continuation
 
-	// ---------- Step 结果 ----------
 	Values map[Step]interface{}
 
-	// ---------- 逻辑变量 ----------
 	Vars map[string]interface{}
 
-	// ---------- 执行环境 ----------
 	Observer  StepObserver
 	Scheduler Scheduler
 	Ctx       *actor.ExecutionContext
 
-	// ---------- RPC Continuations ----------
 	continuations map[string]Continuation
 	contID        uint64
 
@@ -71,7 +63,6 @@ func (ctx *QueryContext) OnReturn(cont Continuation) {
 	ctx.mu.Lock()
 	defer ctx.mu.Unlock()
 
-	// 只能注册一次（子计划只应该有一个 Return 接收者）
 	ctx.onReturn = cont
 }
 
@@ -121,12 +112,9 @@ func (ctx *QueryContext) RegisterCont(cont Continuation) string {
 	root.mu.Lock()
 	defer root.mu.Unlock()
 
-	// root.contID++
 	root.contID = globalContID.Add(1)
 	name := fmt.Sprintf("_query_cont_%d", root.contID)
 	root.continuations[name] = cont
-
-	log.Printf("[CONT] register -- contId:%s root:%s", name, fmt.Sprintf("%p", ctx.Root))
 
 	contRoots.Store(name, root)
 

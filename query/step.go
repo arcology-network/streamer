@@ -11,7 +11,6 @@ type Step interface {
 }
 
 func StartStep(ctx *QueryContext, step Step, cont Continuation) {
-	// ⭐ ① 启动前检查
 	if ctx.finished {
 		return
 	}
@@ -21,7 +20,6 @@ func StartStep(ctx *QueryContext, step Step, cont Continuation) {
 	}
 
 	step.Start(ctx, func(resp interface{}, err error) {
-		// ⭐ ② 回调时再检查（异步场景非常重要）
 		if ctx.finished {
 			return
 		}
