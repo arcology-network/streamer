@@ -34,16 +34,16 @@ func RunJetTestServer() *server.Server {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	// 必须自行检查 JetStream 是否 ready（v2.10）
+	// You must manually check whether JetStream is ready (v2.10).
 	waitJetStreamReady(s)
 	return s
 }
 
-// v2.10.x 版本没有 JetStreamIsReady，只能自己检测 API 是否能正常调用
+// In version v2.10.x, there is no JetStreamIsReady, so you can only manually check if the API can be called normally.
 func waitJetStreamReady(s *server.Server) {
 	url := s.ClientURL()
 
-	// 最多等待 2 秒
+	// Wait for up to 2 seconds
 	deadline := time.Now().Add(2 * time.Second)
 
 	for time.Now().Before(deadline) {
@@ -51,11 +51,11 @@ func waitJetStreamReady(s *server.Server) {
 		if err == nil {
 			js, err := nc.JetStream()
 			if err == nil {
-				// 请求账户信息来确认JS是否可用
+				// Request account information to confirm if JS is available.
 				_, err = js.AccountInfo()
 				nc.Close()
 				if err == nil {
-					return // JetStream 已准备好
+					return // JetStream Ready
 				}
 			}
 			nc.Close()

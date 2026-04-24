@@ -39,6 +39,8 @@ type JetStreamConfig struct {
 	Nats struct {
 		Servers       []string      `yaml:"servers"`
 		Name          string        `yaml:"name"`
+		User          string        `yaml:"user"`
+		Password      string        `yaml:"password"`
 		ReconnectWait time.Duration `yaml:"reconnect_wait"`
 		MaxReconnects int           `yaml:"max_reconnects"`
 	} `yaml:"nats"`

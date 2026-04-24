@@ -24,9 +24,12 @@ func NewJetKVStreamerFromConfig(cfg *JetStreamConfig) (*JetKVStreamer, error) {
 		nats.Name(cfg.Nats.Name),
 		nats.ReconnectWait(cfg.Nats.ReconnectWait),
 		nats.MaxReconnects(cfg.Nats.MaxReconnects),
+		nats.UserInfo(cfg.Nats.User, cfg.Nats.Password),
 	}
 
-	nc, err := nats.Connect(strings.Join(cfg.Nats.Servers, ","), opts...)
+	nc, err := nats.Connect(
+		strings.Join(cfg.Nats.Servers, ","),
+		opts...)
 	if err != nil {
 		return nil, err
 	}
