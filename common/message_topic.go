@@ -6,7 +6,7 @@ const (
 	MsgSelectedReceiptsHash = "selectedReceiptsHash"
 	MsgSelectedReceipts     = "selectedReceipts"
 
-	MsgEuResultSelected      = "euResultSelected"
+	MsgAccessRecordSelected  = "accessRecordSelected"
 	MsgEuResults             = "euResults"
 	MsgGenerationReapingList = "generationReapingList"
 
@@ -98,6 +98,4 @@ const (
 
 	MsgRpcHash        = "rpchash"
 	MsgExecGeneration = "execGeneration"
-
-	MsgInitScheduletate = "initScheduleState"
 )

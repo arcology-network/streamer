@@ -36,7 +36,7 @@ func (op *EuResultOperation) GetData(msg *scommon.Message) (hashes []evmCommon.H
 	}
 
 	for _, result := range *results {
-		hashes = append(hashes, evmCommon.BytesToHash([]byte(result.H)))
+		hashes = append(hashes, result.Hash)
 		data = append(data, result)
 	}
 	return
