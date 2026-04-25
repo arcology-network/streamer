@@ -24,11 +24,12 @@ import (
 	"github.com/arcology-network/streamer/actor"
 	brokerpk "github.com/arcology-network/streamer/broker"
 	scommon "github.com/arcology-network/streamer/common"
+
+	"github.com/arcology-network/streamer/logger"
 )
 
 func TestAggrSelector(t *testing.T) {
-	// log.InitLog("testing.log", "./log.toml", "testing", "testing", 0)
-
+	logger.InitLog("./log.toml", "")
 	broker := brokerpk.NewStatefulStreamer()
 	dataProcessor := NewDataPreprocessor()
 	aggr := NewAggrSelector()
@@ -65,7 +66,7 @@ func TestAggrSelector(t *testing.T) {
 }
 
 func TestAggrSelector2(t *testing.T) {
-
+	logger.InitLog("./log.toml", "")
 	broker := brokerpk.NewStatefulStreamer()
 	dataProcessor := NewDataPreprocessor()
 	aggr := NewAggrSelector()
@@ -93,6 +94,7 @@ func TestAggrSelector2(t *testing.T) {
 }
 
 func TestAggrSelectorWithMsgCleaner(t *testing.T) {
+	logger.InitLog("./log.toml", "")
 	broker := brokerpk.NewStatefulStreamer()
 	dataProcessor := NewDataPreprocessor()
 	aggr := NewAggrSelector()
