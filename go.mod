@@ -27,9 +27,7 @@ require (
 )
 
 require (
-	github.com/arcology-network/common-lib v1.9.1-0.20260606140601-ac5107cbdcb0
 	github.com/arcology-network/consensus-engine v1.9.0
-	github.com/arcology-network/eu v0.0.0-20260606142436-e909b95c6687
 	github.com/bsm/sarama-cluster v2.1.15+incompatible
 	github.com/ethereum/go-ethereum v1.14.8
 	github.com/natefinch/lumberjack v2.0.0+incompatible
@@ -43,6 +41,11 @@ require (
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+)
+
+require (
+	github.com/arcology-network/common-lib v1.9.1-0.20260618021700-0214ff3b2803
+	github.com/arcology-network/eu v0.0.0-20260630084628-0f86cc6b6a2d
 )
 
 require (
